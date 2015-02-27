@@ -1,14 +1,11 @@
 \name{phylocurve-package}
 \alias{phylocurve-package}
-\alias{phylocurve}
 \docType{package}
 \title{
-What the package does (short line)
-~~ package title ~~
+phylocurve: Phylogenetic comparative methods for function-valued traits
 }
 \description{
-More about what it does (maybe more than one line)
-~~ A concise (1-5 lines) description of the package ~~
+phylocurve offers a variety of phylogenetic comparative tools for studying the evolution of function-valued traits, including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated function-valued trait evolution.
 }
 \details{
 \tabular{ll}{
@@ -16,25 +13,43 @@ Package: \tab phylocurve\cr
 Type: \tab Package\cr
 Version: \tab 1.0\cr
 Date: \tab 2015-02-26\cr
-License: \tab What license is it under?\cr
+License: \tab GPL (>= 2)\cr
 }
-~~ An overview of how to use the package, including the most important functions ~~
+
 }
 \author{
-Who wrote it
-
-Maintainer: Who to complain to <yourfault@somewhere.net>
-~~ The author and/or maintainer of the package ~~
+Eric W. Goolsby <eric.goolsby.evolution@gmail.com>
 }
 \references{
-~~ Literature or other references for background information ~~
+Goolsby, E.W. 2015. "Phylogenetic comparative methods for evaluating the evolutionary history of function-valued traits." Systematic Biology. In press.
+
+Adams, D.C. 2014. A method for assessing phylogenetic least squares models for shape and other high-dimensional multivariate data. Evolution. 68:2675-2688.
+
+Adams, D.C. 2014. A generalized K statistic for estimating phylogenetic signal from shape and other high-dimensional multivariate data. Systematic Biology. 63:685-697.
+
+Ho, L. S. T. and Ane, C. 2014. "A linear-time algorithm for Gaussian and non-Gaussian trait evolution models". Systematic Biology 63(3):397-408.
 }
-~~ Optionally other standard keywords, one per line, from file KEYWORDS in the R documentation directory ~~
-\keyword{ package }
-\seealso{
-~~ Optional links to other man pages, e.g. ~~
-~~ \code{\link[<pkg>:<pkg>-package]{<pkg>}} ~~
-}
+\keyword{ phylogenetic comparative method }
+\keyword{ ancestral state reconstruction }
+\keyword{ function-valued traits }
+\keyword{ infnite-dimensional traits }
+\keyword{ evolution of tolerance }
+\keyword{ reaction norms }
+\keyword{ phenotypic plasticity }
+\keyword{ dose-response curves }
+\keyword{ phylogenetic signal }
+\keyword{ PGLS }
 \examples{
-~~ simple examples of the most important functions ~~
+# simulate evolution of a function-valued trait (glm with logit link)
+sim_data <- simcurves()
+
+# ancestral curve reconstruction
+anc_recon <- phylocurve(formula = y~x,tree = sim_data$tree,data = sim_data$data)
+
+# estimate phylogenetic signal
+multivar_phylosig(tip_coefficients = anc_recon$tip_coefficients,tree = sim_data$tree)
+
+# assess correlated trait evolution with a univariate trait
+X <- fastBM(sim_data$tree)
+multivar_pgls(tip_coefficients = anc_recon$tip_coefficients,univariate_trait = X,tree = sim_data$tree)
 }

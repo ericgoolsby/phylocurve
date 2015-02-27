@@ -1,10 +1,10 @@
 import(ape)
+import(phytools)
 import(geomorph)
-importFrom(phytools, pbtree, sim.corrs, fastBM,splitTree,paste.tree,sampleFrom)
 importFrom(phylolm,three.point.compute,transf.branch.lengths,pruningwise.branching.times,pruningwise.distFromRoot)
 export(phylocurve,
        simcurves,
        get_tip_coefficients,
-       multivar_phylosig,
-       multivar_pgls
+       phylocurve.signal,
+       phylocurve.pgls
        )

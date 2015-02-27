@@ -1,8 +1,8 @@
 phylocurve <- function(formula,tree,data,ymin=.01,ymax=.99,ylength=30,tip_coefficients,species_identifier="species",verbose=FALSE)
 {
-  if(!(species_identifier %in% colnames(data))) stop("Add species names column to data.")
   if(missing(tip_coefficients))
   {
+    if(!(species_identifier %in% colnames(data))) stop("Add species names column to data.")
     tip_coefficients <- get_tip_coefficients(formula = formula,tree = tree,data = data,ymin = ymin,ymax = ymax,ylength = ylength,species_identifier = species_identifier,verbose = verbose)
   } else if(verbose) cat("Phase 1: Tip estimates already provided\n")
   pgls_curve(tree = tree,tip_coefficients = tip_coefficients,ymin = ymin,ymax = ymax,ylength = ylength,verbose = verbose)
@@ -154,7 +154,7 @@ logit_m_func <- function(slope,ec50)
   return(m)
 }
 
-simcurves <- function(nspecies = 30,x_length=20,nreps=20,startree=FALSE,lambda=1,seed)
+simcurves <- function(nspecies = 30,x_length=20,startree=FALSE,lambda=1,seed)
 {
   if(!missing(seed)) set.seed(seed)
   x <- seq(0,15,length=x_length) # environmental gradient
@@ -186,7 +186,7 @@ simcurves <- function(nspecies = 30,x_length=20,nreps=20,startree=FALSE,lambda=1
 }
 
 # wrapper for physignal
-multivar_phylosig <- function(tip_coefficients,tree,ymin=.01,ymax=.99,ylength=30,iter=1000)
+phylocurve.signal <- function(tip_coefficients,tree,ymin=.01,ymax=.99,ylength=30,iter=1000)
 {
   x <- tip_coefficients
   x <- t(apply(x,1,function(X) logit_inv(X,seq(ymin,ymax,length=ylength))))
@@ -324,7 +324,7 @@ physignal_no_plot <- function (phy, A, iter = 249, method = c("Kmult", "SSC"))
 }
 
 # wrapper for procD.pgls
-multivar_pgls <- function(tip_coefficients,univariate_trait,tree,ymin=.01,ymax=.99,ylength=30,iter=1000)
+phylocurve.pgls <- function(tip_coefficients,univariate_trait,tree,ymin=.01,ymax=.99,ylength=30,iter=1000)
 {
   x <- tip_coefficients
   y <- t(apply(x,1,function(X) logit_inv(X,seq(ymin,ymax,length=ylength))))
