@@ -1,4 +1,14 @@
-phylocurve <- function(formula,tree,data,ymin=.01,ymax=.99,ylength=100,species_identifier="species",verbose=FALSE)
+phylocurve <- function(formula,tree,data,ymin=.01,ymax=.99,ylength=30,tip_coefficients,species_identifier="species",verbose=FALSE)
+{
+  if(!(species_identifier %in% colnames(data))) stop("Add species names column to data.")
+  if(missing(tip_coefficients))
+  {
+    tip_coefficients <- get_tip_coefficients(formula = formula,tree = tree,data = data,ymin = ymin,ymax = ymax,ylength = ylength,species_identifier = species_identifier,verbose = verbose)
+  } else if(verbose) cat("Phase 1: Tip estimates already provided\n")
+  pgls_curve(tree = tree,tip_coefficients = tip_coefficients,ymin = ymin,ymax = ymax,ylength = ylength,verbose = verbose)
+}
+
+get_tip_coefficients <- function(formula,tree,data,ymin=.01,ymax=.99,ylength=30,species_identifier="species",verbose=FALSE)
 {
   if(!(species_identifier %in% colnames(data))) stop("Add species names column to data.")
   dat <- model.frame(formula,data=data)
@@ -21,12 +31,12 @@ phylocurve <- function(formula,tree,data,ymin=.01,ymax=.99,ylength=100,species_i
         counter <- counter + 10
       }
       if(i==nspecies) cat(paste(100,"%   ",sep=""))
-
+      
     }
     tip_coefficients[taxa[i],] <- coef(glm(formula,family = quasibinomial("logit"),data = data[data$species==taxa[i],]))
   }
   if(verbose) cat("\n")
-  pgls_curve(tree = tree,tip_coefficients = tip_coefficients,ymin = ymin,ymax = ymax,ylength = ylength,verbose = verbose)
+  tip_coefficients
 }
 
 pgls_curve <- function(tree,tip_coefficients,varAY,vals_only=FALSE,ymin,ymax,ylength,verbose)
@@ -92,7 +102,7 @@ pgls_curve <- function(tree,tip_coefficients,varAY,vals_only=FALSE,ymin,ymax,yle
   colnames(CI) <- colnames(anc_vals) <- (nspecies+1):(nspecies+tree$Nnode)
   lower_CI <- anc_vals - CI
   upper_CI <- anc_vals + CI
-  return(list(node_coefficients=ret,fitted_x=anc_vals,lower_CI_x=lower_CI,upper_CI_x=upper_CI,y_vals=seq(ymin,ymax,length=ylength)))
+  return(list(node_coefficients=ret,fitted_x=anc_vals,lower_CI_x=lower_CI,upper_CI_x=upper_CI,y_vals=seq(ymin,ymax,length=ylength),tip_coefficients=tip_coefficients))
 }
 
 # logit function
@@ -173,4 +183,224 @@ simcurves <- function(nspecies = 30,x_length=20,nreps=20,startree=FALSE,lambda=1
               true_coefs = data.frame(Intercept=logit_b_func(logit_slope_true,logit_ec50_true),slope=logit_m_func(logit_slope_true,logit_ec50_true),row.names = names(logit_ec50_true))
   )
   ret
+}
+
+# wrapper for physignal
+multivar_phylosig <- function(tip_coefficients,tree,ymin=.01,ymax=.99,ylength=30,iter=1000)
+{
+  x <- tip_coefficients
+  x <- t(apply(x,1,function(X) logit_inv(X,seq(ymin,ymax,length=ylength))))
+  physignal_no_plot(tree,x,iter)
+}
+
+# faster version of physignal from geomorph package by avoiding multiple calls to solve()
+# also avoids plotting
+physignal_no_plot <- function (phy, A, iter = 249, method = c("Kmult", "SSC")) 
+{
+  method <- match.arg(method)
+  if (any(is.na(A)) == T) {
+    stop("Data matrix contains missing values. Estimate these first (see 'estimate.missing').")
+  }
+  if (length(dim(A)) == 3) {
+    if (is.null(dimnames(A)[[3]])) {
+      stop("Data matrix does not include taxa names as dimnames for 3rd dimension.")
+    }
+    x <- two.d.array(A)
+  }
+  if (length(dim(A)) == 2) {
+    if (is.null(rownames(A))) {
+      stop("Data matrix does not include taxa names as dimnames for rows.")
+    }
+    x <- A
+  }
+  if (class(phy) != "phylo") 
+    stop("tree must be of class 'phylo.'")
+  if (!is.binary.tree(phy)) 
+    stop("tree is not fully bifurcating.")
+  N <- length(phy$tip.label)
+  if (N != dim(x)[1]) {
+    stop("Number of taxa in data matrix and tree are not not equal.")
+  }
+  if (length(match(rownames(x), phy$tip.label)) != N) 
+    stop("Data matrix missing some taxa present on the tree.")
+  if (length(match(phy$tip.label, rownames(x))) != N) 
+    stop("Tree missing some taxa in the data matrix.")
+  if (any(is.na(match(sort(phy$tip.label), sort(rownames(x))))) == 
+        T) {
+    stop("Names do not match between tree and data matrix.")
+  }
+  x <- x[phy$tip.label, ]
+  if (is.null(dim(x)) == TRUE) {
+    x <- matrix(x, dimnames = list(names(x)))
+  }
+  if (method == "Kmult") {
+    Kmult <- function(x, phy,C,solveC,D.mat,K.denom) {
+      x <- as.matrix(x)
+      N <- length(phy$tip.label)
+      ones <- array(1, N)
+      C <- C[row.names(x), row.names(x)]
+      solveC <- solveC[row.names(x), row.names(x)]
+      D.mat <- D.mat[row.names(x), row.names(x)]
+      a.obs <- colSums(solveC) %*% x/sum(solveC)
+      distmat <- as.matrix(dist(rbind(as.matrix(x), a.obs)))
+      MSEobs.d <- sum(distmat[(1:N), (N + 1)]^2)
+      dist.adj <- as.matrix(dist(rbind((D.mat %*% (x - (ones %*% a.obs))), 0)))
+      MSE.d <- sum(dist.adj[(1:N), (N + 1)]^2)
+      K.stat <- (MSEobs.d/MSE.d)/K.denom
+      return(K.stat)
+    }
+    C <- vcv.phylo(phy)
+    solveC <- solve(C)
+    eigC <- eigen(C)
+    D.mat <- solve(eigC$vectors %*% diag(sqrt(eigC$values)) %*% 
+                     t(eigC$vectors))
+    colnames(D.mat) <- rownames(D.mat) <- colnames(C)
+    ones <- array(1, N)
+    K.denom <- (sum(diag(C)) - N * solve(t(ones) %*% 
+                                           solveC %*% ones))/(N - 1)
+    K.obs <- Kmult(x, phy,C,solveC,D.mat,K.denom)
+    P.val <- 1
+    K.val <- rep(0, iter)
+    for (i in 1:iter) {
+      x.r <- as.matrix(x[sample(nrow(x)), ])
+      rownames(x.r) <- rownames(x)
+      K.rand <- Kmult(x.r, phy,C,solveC,D.mat,K.denom)
+      P.val <- ifelse(K.rand >= K.obs, P.val + 1, P.val)
+      K.val[i] <- K.rand
+    }
+    P.val <- P.val/(iter + 1)
+    K.val[iter + 1] = K.obs
+    if (dim(x)[2] > 1) {
+      #plotGMPhyloMorphoSpace(phy, A, ancStates = FALSE)
+    }
+    return(list(phy.signal = K.obs, pvalue = P.val))
+  }
+  if (method == "SSC") {
+    anc.states <- NULL
+    options(warn = -1)
+    for (i in 1:ncol(x)) {
+      tmp <- as.vector(fastAnc(phy, x[, i]))
+      anc.states <- cbind(anc.states, tmp)
+    }
+    colnames(anc.states) <- NULL
+    dist.mat <- as.matrix(dist(rbind(as.matrix(x), as.matrix(anc.states)))^2)
+    SSC.o <- 0
+    for (i in 1:nrow(phy$edge)) {
+      SSC.o <- SSC.o + dist.mat[phy$edge[i, 1], phy$edge[i, 
+                                                         2]]
+    }
+    P.val <- 1
+    SSC.val <- rep(0, iter)
+    for (ii in 1:iter) {
+      x.r <- x[sample(nrow(x)), ]
+      if (is.null(dim(x.r)) == TRUE) {
+        x.r <- matrix(x.r)
+      }
+      row.names(x.r) <- row.names(x)
+      anc.states.r <- NULL
+      options(warn = -1)
+      for (i in 1:ncol(x.r)) {
+        tmp <- as.vector(fastAnc(phy, x.r[, i]))
+        anc.states.r <- cbind(anc.states.r, tmp)
+      }
+      colnames(anc.states.r) <- NULL
+      dist.mat.r <- as.matrix(dist(rbind(as.matrix(x.r), 
+                                         as.matrix(anc.states.r)))^2)
+      SSC.r <- 0
+      for (i in 1:nrow(phy$edge)) {
+        SSC.r <- SSC.r + dist.mat.r[phy$edge[i, 1], phy$edge[i, 
+                                                             2]]
+      }
+      P.val <- ifelse(SSC.r <= SSC.o, P.val + 1, P.val)
+      SSC.val[ii] <- SSC.r
+    }
+    P.val <- P.val/(iter + 1)
+    SSC.val[iter + 1] = SSC.o
+    if (dim(x)[2] > 1) {
+      #plotGMPhyloMorphoSpace(phy, A, ancStates = FALSE)
+    }
+    return(list(phy.signal = SSC.o, pvalue = P.val))
+  }
+}
+
+# wrapper for procD.pgls
+multivar_pgls <- function(tip_coefficients,univariate_trait,tree,ymin=.01,ymax=.99,ylength=30,iter=1000)
+{
+  x <- tip_coefficients
+  y <- t(apply(x,1,function(X) logit_inv(X,seq(ymin,ymax,length=ylength))))
+  procd <- procD.pgls2(f1 = y~univariate_trait,phy = tree,iter = iter, y=y)
+  #list(procd=procd,univariate_trait=univariate_trait)
+  procd
+}
+
+procD.pgls2 <- function (f1, phy, iter = 999, int.first = FALSE, RRPP = FALSE, 
+          verbose = FALSE,y) 
+{
+  data = NULL
+  form.in <- formula(f1)
+  if (int.first == TRUE) 
+    ko = TRUE
+  else ko = FALSE
+  Terms <- terms(form.in, keep.order = ko)
+  k <- length(attr(Terms, "term.labels"))
+  mf <- model.frame(form.in)
+  Y <- as.matrix(mf[1])
+  if (length(dim(Y)) != 2) {
+    stop("Response matrix (shape) not a 2D array. Use 'two.d.array' first.")
+  }
+  if (any(is.na(Y)) == T) {
+    stop("Response data matrix (shape) contains missing values. Estimate these first (see 'estimate.missing').")
+  }
+  if (is.null(dimnames(Y)[[1]])) {
+    stop("No species names with Y-data")
+  }
+  N <- length(phy$tip.label)
+  if (length(match(rownames(Y), phy$tip.label)) != N) 
+    stop("Data matrix missing some taxa present on the tree.")
+  if (length(match(phy$tip.label, rownames(Y))) != N) 
+    stop("Tree missing some taxa in the data matrix.")
+  C <- vcv.phylo(phy)
+  C <- C[rownames(Y), rownames(Y)]
+  eigC <- eigen(C)
+  lambda <- zapsmall(eigC$values)
+  if (any(lambda == 0)) {
+    warning("Singular phylogenetic covariance matrix. Proceed with caution")
+    lambda = lambda[lambda > 0]
+  }
+  eigC.vect = eigC$vectors[, 1:(length(lambda))]
+  Pcor <- solve(eigC.vect %*% diag(sqrt(lambda)) %*% t(eigC.vect))
+  PY <- Pcor %*% Y
+  Xs = geomorph:::mod.mats(mf)
+  anova.parts.obs <- geomorph:::anova.pgls.parts(form.in, X = NULL, Pcor, 
+                                      Yalt = "observed", keep.order = ko)
+  anova.tab <- anova.parts.obs$table
+  df <- anova.parts.obs$df[1:k]
+  dfE <- anova.parts.obs$df[k + 1]
+  P <- array(0, c(k, 1, iter + 1))
+  P[, , 1] <- SS.obs <- anova.parts.obs$F[1:k]
+  for (i in 1:iter) {
+    if (RRPP == TRUE) {
+      SS.ran <- geomorph:::SS.pgls.random(Y, Xs, SS = SS.obs, Pcor, 
+                               Yalt = "RRPP")
+    }
+    else SS.ran <- geomorph:::SS.pgls.random(Y, Xs, Pcor, SS = SS.obs, 
+                                  Yalt = "resample")
+    SS.r <- SS.ran$SS
+    Yr <- SS.ran$Y
+    SSE.r <- SS.ran$SSE
+    Fs.r <- (SS.r/df)/(SSE.r/dfE)
+    P[, , i + 1] <- Fs.r
+  }
+  P.val <- geomorph:::Pval.matrix(P)
+  Z <- geomorph:::Effect.size.matrix(P)
+  anova.tab <- data.frame(anova.tab, Z = c(Z, NA, NA), P.value = c(P.val, 
+                                                                   NA, NA))
+  anova.title = "\nRandomization of Raw Values used\n"
+  attr(anova.tab, "heading") <- paste("\nType I (Sequential) Sums of Squares and Cross-products\n", 
+                                      anova.title)
+  class(anova.tab) <- c("anova", class(anova.tab))
+  if (verbose == TRUE) {
+    list(anova.table = anova.tab, call = match.call(), SS.rand = P)
+  }
+  else anova.tab
 }
