@@ -2,7 +2,7 @@ Package: phylocurve
 Type: Package
 Title: Phylogenetic comparative methods for function-valued traits
 Version: 0.1.1
-Date: 2015-02-26
+Date: 2015-02-28
 Author: Eric W. Goolsby
 Maintainer: Eric W. Goolsby <eric.goolsby.evolution@gmail.com>
 Description: phylocurve offers a variety of phylogenetic comparative tools for studying the evolution of function-valued traits, including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated function-valued trait evolution.
