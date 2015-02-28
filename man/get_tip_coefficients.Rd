@@ -40,6 +40,8 @@ ether to print progress during tip curve coefficient estimation.
 Estimated regression coefficients of tip curves.
 }
 \examples{
+require(phytools)
+
 # simulate evolution of a function-valued trait (glm with logit link)
 sim_data <- simcurves()
 
@@ -49,9 +51,9 @@ tip_coefficients <- get_tip_coefficients(formula = y~x,tree = sim_data$tree,data
 anc_recon <- phylocurve(tree = sim_data$tree,tip_coefficients = tip_coefficients)
 
 # estimate phylogenetic signal
-multivar_phylosig(tip_coefficients = tip_coefficients,tree = sim_data$tree)
+phylocurve.signal(tip_coefficients = tip_coefficients,tree = sim_data$tree)
 
 # assess correlated trait evolution with a univariate trait
 X <- fastBM(sim_data$tree)
-multivar_pgls(tip_coefficients = tip_coefficients,univariate_trait = X,tree = sim_data$tree)
+phylocurve.pgls(tip_coefficients = tip_coefficients,univariate_trait = X,tree = sim_data$tree)
 }

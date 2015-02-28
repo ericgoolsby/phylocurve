@@ -45,6 +45,8 @@ Adams, D.C. 2014. A method for assessing phylogenetic least squares models for s
 Goolsby, E.W. 2015. "Phylogenetic comparative methods for evaluating the evolutionary history of function-valued traits." Systematic Biology. In press.
 }
 \examples{
+require(phytools)
+
 # simulate evolution of a function-valued trait (glm with logit link)
 sim_data <- simcurves()
 
@@ -53,5 +55,5 @@ anc_recon <- phylocurve(formula = y~x,tree = sim_data$tree,data = sim_data$data)
 
 # assess correlated trait evolution with a univariate trait
 X <- fastBM(sim_data$tree)
-multivar_pgls(tip_coefficients = anc_recon$tip_coefficients,univariate_trait = X,tree = sim_data$tree)
+phylocurve.pgls(tip_coefficients = anc_recon$tip_coefficients,univariate_trait = X,tree = sim_data$tree)
 }

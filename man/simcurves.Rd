@@ -35,6 +35,8 @@ Optional seed to set for reproducibility
 Pagel, M. 1999. "Inferring the historical patterns of biological evolution". Nature 401:877-884.
 }
 \examples{
+require(phytools)
+
 # simulate evolution of a function-valued trait (glm with logit link)
 sim_data <- simcurves()
 
@@ -42,10 +44,10 @@ sim_data <- simcurves()
 anc_recon <- phylocurve(formula = y~x,tree = sim_data$tree,data = sim_data$data)
 
 # estimate phylogenetic signal
-multivar_phylosig(tip_coefficients = anc_recon$tip_coefficients,tree = sim_data$tree)
+phylocurve.signal(tip_coefficients = anc_recon$tip_coefficients,tree = sim_data$tree)
 
 # assess correlated trait evolution with a univariate trait
 X <- fastBM(sim_data$tree)
-multivar_pgls(tip_coefficients = anc_recon$tip_coefficients,univariate_trait = X,tree = sim_data$tree)
+phylocurve.pgls(tip_coefficients = anc_recon$tip_coefficients,univariate_trait = X,tree = sim_data$tree)
 
 }

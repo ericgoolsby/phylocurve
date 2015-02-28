@@ -44,6 +44,8 @@ Blomberg SP, Garland T, Ives AR. 2003. Testing for phylogenetic signal in compar
 
 Goolsby, E.W. 2015. "Phylogenetic comparative methods for evaluating the evolutionary history of function-valued traits." Systematic Biology. In press.
 }\examples{
+require(phytools)
+
 # simulate evolution of a function-valued trait (glm with logit link)
 sim_data <- simcurves()
 
@@ -51,5 +53,5 @@ sim_data <- simcurves()
 anc_recon <- phylocurve(formula = y~x,tree = sim_data$tree,data = sim_data$data)
 
 # estimate phylogenetic signal
-multivar_phylosig(tip_coefficients = anc_recon$tip_coefficients,tree = sim_data$tree)
+phylocurve.signal(tip_coefficients = anc_recon$tip_coefficients,tree = sim_data$tree)
 }
