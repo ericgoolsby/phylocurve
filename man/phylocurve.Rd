@@ -7,7 +7,8 @@ Ancestral curve reconstruction
 This function performs ancestral reconstruction of function-valued traits. Currently only logistic regression (glm with logit link) is implemented.
 }
 \usage{
-phylocurve(formula, tree, data, ymin = 0.01, ymax = 0.99, ylength = 30, tip_coefficients, species_identifier = "species", verbose = FALSE)
+phylocurve(formula, tree, data, ymin = 0.01, ymax = 0.99, ylength = 30,
+tip_coefficients, species_identifier = "species", verbose = FALSE)
 }
 \arguments{
   \item{formula}{
@@ -71,5 +72,6 @@ phylocurve.signal(tip_coefficients = anc_recon$tip_coefficients,tree = sim_data$
 
 # assess correlated trait evolution with a univariate trait
 X <- fastBM(sim_data$tree)
-phylocurve.pgls(tip_coefficients = anc_recon$tip_coefficients,univariate_trait = X,tree = sim_data$tree)
+phylocurve.pgls(tip_coefficients = anc_recon$tip_coefficients,
+univariate_trait = X,tree = sim_data$tree)
 }

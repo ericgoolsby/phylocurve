@@ -7,7 +7,7 @@ Simulate function-valued curve evolution
 This function simulates evolution of a function-valued trait (glm with logit link) under Brownian motion.
 }
 \usage{
-simcurves(nspecies = 30, x_length = 20, nreps = 20, startree = FALSE, lambda = 1, seed)
+simcurves(nspecies = 30, x_length = 20, startree = FALSE, lambda = 1, seed)
 }
 \arguments{
   \item{nspecies}{
@@ -48,6 +48,7 @@ phylocurve.signal(tip_coefficients = anc_recon$tip_coefficients,tree = sim_data$
 
 # assess correlated trait evolution with a univariate trait
 X <- fastBM(sim_data$tree)
-phylocurve.pgls(tip_coefficients = anc_recon$tip_coefficients,univariate_trait = X,tree = sim_data$tree)
+phylocurve.pgls(tip_coefficients = anc_recon$tip_coefficients,
+univariate_trait = X,tree = sim_data$tree)
 
 }

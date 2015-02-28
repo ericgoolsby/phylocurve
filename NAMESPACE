@@ -2,6 +2,7 @@ import(ape)
 import(phytools)
 import(geomorph)
 importFrom(phylolm,three.point.compute,transf.branch.lengths,pruningwise.branching.times,pruningwise.distFromRoot)
+importFrom(geiger,rescale)
 export(phylocurve,
        simcurves,
        get_tip_coefficients,

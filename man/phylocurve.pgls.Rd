@@ -7,7 +7,8 @@ Phylogenetic ANOVA/regression for function-valued data
 This function wraps procD.pgls from the geomorph package (Adams 2014) to assess the significance of correlated evolution between a function-valued and a univariate trait.
 }
 \usage{
-phylocurve.pgls(tip_coefficients, univariate_trait, tree, ymin = 0.01, ymax = 0.99, ylength = 30, iter = 1000)
+phylocurve.pgls(tip_coefficients, univariate_trait, tree, ymin = 0.01,
+ymax = 0.99, ylength = 30, iter = 1000)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -55,5 +56,6 @@ anc_recon <- phylocurve(formula = y~x,tree = sim_data$tree,data = sim_data$data)
 
 # assess correlated trait evolution with a univariate trait
 X <- fastBM(sim_data$tree)
-phylocurve.pgls(tip_coefficients = anc_recon$tip_coefficients,univariate_trait = X,tree = sim_data$tree)
+phylocurve.pgls(tip_coefficients = anc_recon$tip_coefficients,
+univariate_trait = X,tree = sim_data$tree)
 }

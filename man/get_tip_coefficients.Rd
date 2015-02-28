@@ -7,7 +7,8 @@ Estimate regression coefficients for tip species curves
 Estiamtes regression coefficients for tip species curves from raw data. May be useful if wanting to perform methdos without first performing ancestral curve reconstruction via the phylocurve() function.
 }
 \usage{
-get_tip_coefficients(formula, tree, data, ymin = 0.01, ymax = 0.99, ylength = 30, species_identifier = "species", verbose = FALSE)
+get_tip_coefficients(formula, tree, data, ymin = 0.01, ymax = 0.99,
+ylength = 30, species_identifier = "species", verbose = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

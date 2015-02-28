@@ -7,7 +7,8 @@ Phylogenetic signal of function-valued traits
 This function wraps physignal from the geomorph package (Adams 2014) to calculate a multivariate version of Blomberg's K (Kmult).
 }
 \usage{
-phylocurve.signal(tip_coefficients, tree, ymin = 0.01, ymax = 0.99, ylength = 30, iter = 1000)
+phylocurve.signal(tip_coefficients, tree, ymin = 0.01, ymax = 0.99,
+ylength = 30, iter = 1000)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
