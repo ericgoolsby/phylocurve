@@ -7,4 +7,4 @@ Author: Eric W. Goolsby
 Maintainer: Eric W. Goolsby <eric.goolsby.evolution@gmail.com>
 Description: phylocurve offers a variety of phylogenetic comparative tools for studying the evolution of function-valued traits, including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated function-valued trait evolution.
 License: GPL (>= 2)
-Imports: ape, geomorph, geiger, phytools, phylolm
+Imports: ape, geiger, phytools, phylolm

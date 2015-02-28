@@ -205,7 +205,7 @@ physignal_no_plot <- function (phy, A, iter = 249, method = c("Kmult", "SSC"))
     if (is.null(dimnames(A)[[3]])) {
       stop("Data matrix does not include taxa names as dimnames for 3rd dimension.")
     }
-    x <- two.d.array(A)
+    x <- geomorph_two.d.array(A)
   }
   if (length(dim(A)) == 2) {
     if (is.null(rownames(A))) {
@@ -328,6 +328,7 @@ phylocurve.pgls <- function(tip_coefficients,univariate_trait,tree,ymin=.01,ymax
 {
   x <- tip_coefficients
   y <- t(apply(x,1,function(X) logit_inv(X,seq(ymin,ymax,length=ylength))))
+  #procd <- procD.pgls(f1 = y~univariate_trait,phy = tree,iter = iter)
   procd <- procD.pgls2(f1 = y~univariate_trait,phy = tree,iter = iter, y=y)
   #list(procd=procd,univariate_trait=univariate_trait)
   procd
@@ -370,8 +371,8 @@ procD.pgls2 <- function (f1, phy, iter = 999, int.first = FALSE, RRPP = FALSE,
   eigC.vect = eigC$vectors[, 1:(length(lambda))]
   Pcor <- solve(eigC.vect %*% diag(sqrt(lambda)) %*% t(eigC.vect))
   PY <- Pcor %*% Y
-  Xs = geomorph:::mod.mats(mf)
-  anova.parts.obs <- geomorph:::anova.pgls.parts(form.in, X = NULL, Pcor, 
+  Xs = geomorph_mod.mats(mf)
+  anova.parts.obs <- geomorph_anova.pgls.parts(form.in, X = NULL, Pcor, 
                                       Yalt = "observed", keep.order = ko)
   anova.tab <- anova.parts.obs$table
   df <- anova.parts.obs$df[1:k]
@@ -380,10 +381,10 @@ procD.pgls2 <- function (f1, phy, iter = 999, int.first = FALSE, RRPP = FALSE,
   P[, , 1] <- SS.obs <- anova.parts.obs$F[1:k]
   for (i in 1:iter) {
     if (RRPP == TRUE) {
-      SS.ran <- geomorph:::SS.pgls.random(Y, Xs, SS = SS.obs, Pcor, 
+      SS.ran <- geomorph_SS.pgls.random(Y, Xs, SS = SS.obs, Pcor, 
                                Yalt = "RRPP")
     }
-    else SS.ran <- geomorph:::SS.pgls.random(Y, Xs, Pcor, SS = SS.obs, 
+    else SS.ran <- geomorph_SS.pgls.random(Y, Xs, Pcor, SS = SS.obs, 
                                   Yalt = "resample")
     SS.r <- SS.ran$SS
     Yr <- SS.ran$Y
@@ -391,8 +392,8 @@ procD.pgls2 <- function (f1, phy, iter = 999, int.first = FALSE, RRPP = FALSE,
     Fs.r <- (SS.r/df)/(SSE.r/dfE)
     P[, , i + 1] <- Fs.r
   }
-  P.val <- geomorph:::Pval.matrix(P)
-  Z <- geomorph:::Effect.size.matrix(P)
+  P.val <- geomorph_Pval.matrix(P)
+  Z <- geomorph_Effect.size.matrix(P)
   anova.tab <- data.frame(anova.tab, Z = c(Z, NA, NA), P.value = c(P.val, 
                                                                    NA, NA))
   anova.title = "\nRandomization of Raw Values used\n"
@@ -403,4 +404,184 @@ procD.pgls2 <- function (f1, phy, iter = 999, int.first = FALSE, RRPP = FALSE,
     list(anova.table = anova.tab, call = match.call(), SS.rand = P)
   }
   else anova.tab
+}
+
+geomorph_mod.mats <- function (mod.mf, keep.order = FALSE) 
+{
+  Terms <- terms(mod.mf, keep.order = keep.order)
+  k <- length(attr(Terms, "term.labels"))
+  Y <- as.matrix(mod.mf[1])
+  Xs <- as.list(array(0, k + 1))
+  Xs[[1]] <- matrix(1, nrow(Y))
+  for (i in 1:k) {
+    Xs[[i + 1]] <- model.matrix(Terms[1:i], data = mod.mf)
+  }
+  list(Xs = Xs, terms = attr(Terms, "term.labels"))
+}
+
+geomorph_anova.pgls.parts <- function (f1, X = NULL, Pcor, Yalt = c("observed", "resample", 
+                                                                      "RRPP"), keep.order = FALSE) 
+{
+  form.in <- formula(f1)
+  Yalt = match.arg(Yalt)
+  Terms <- terms(form.in, keep.order = keep.order)
+  mf <- model.frame(Terms)
+  Y <- eval(form.in[[2]], parent.frame())
+  if (is.null(X)) {
+    Xs <- geomorph_mod.mats(mf, keep.order = keep.order)
+  }
+  else {
+    Xs = X
+  }
+  anova.terms <- Xs$terms
+  k <- length(Xs$Xs) - 1
+  df <- SSEs <- array(0, k + 1)
+  df[1] <- 1
+  SSY <- SSEs[1] <- geomorph_SSE(lm(Pcor %*% Y ~ Pcor %*% matrix(1, 
+                                                        nrow(Y)) - 1))
+  for (i in 1:k) {
+    x <- Xs$Xs[[i + 1]]
+    Px <- Pcor %*% x
+    df[i + 1] <- qr(x)$rank
+    SSEs[i + 1] <- geomorph_SSE(lm(Pcor %*% Y ~ Px - 1))
+  }
+  SS.tmp <- c(SSEs[-1], SSEs[k + 1])
+  SS <- (SSEs - SS.tmp)[1:(k)]
+  SS <- c(SS, SSY - sum(SS), SSY)
+  if (Yalt == "observed") 
+    SS <- SS[1:k]
+  if (Yalt == "resample") 
+    SS <- geomorph_SS.pgls.random(Y, Xs, Pcor, SS, Yalt = "resample")$SS
+  if (Yalt == "RRPP") 
+    SS <- geomorph_SS.pgls.random(Y, Xs, Pcor, SS, Yalt = "RRPP")$SS
+  df.tmp <- c(df[-1], df[k + 1])
+  df <- (df.tmp - df)[1:k]
+  MS <- SS/df
+  R2 <- SS/SSY
+  SSE.model <- SSY - sum(SS)
+  dfE <- nrow(Y) - (sum(df) + 1)
+  MSE <- SSE.model/dfE
+  Fs <- MS/MSE
+  df <- c(df, dfE, nrow(Y) - 1)
+  SS <- c(SS, SSE.model, SSY)
+  MS <- c(MS, MSE, NA)
+  R2 <- c(R2, NA, NA)
+  Fs <- c(Fs, NA, NA)
+  a.tab <- data.frame(df, SS, MS, Rsq = R2, F = Fs)
+  rownames(a.tab) <- c(anova.terms, "Residuals", "Total")
+  list(table = a.tab, B = coef(lm(Y ~ x - 1)), SS = SS, df = df, 
+       R2 = R2, F = Fs, Y = Y)
+}
+
+geomorph_SS.pgls.random <- function (Y, Xs, SS, Pcor, Yalt = c("resample", "RRPP")) 
+{
+  k <- length(SS)
+  Pcor = as.matrix(Pcor)
+  SSEs.null <- SSEs.resample <- SSEs.rrpp <- numeric(k)
+  PXs <- Xs$Xs
+  for (i in 1:(k + 1)) PXs[[i]] = Pcor %*% Xs$Xs[[i]]
+  if (Yalt == "RRPP") {
+    pseudoY <- PY <- geomorph_RRP.submodels(Xs$Xs, Y)
+    for (i in 1:k) {
+      PY[, , i] = Pcor %*% pseudoY[, , i]
+      SSEs.null[i] <- geomorph_SSE(lm(PY[, , i] ~ PXs[[i]] - 1))
+      SSEs.rrpp[i] <- geomorph_SSE(lm(PY[, , i] ~ PXs[[i + 1]] - 
+                               1))
+    }
+    SS.r <- SSEs.null - SSEs.rrpp
+    Y <- solve(Pcor) %*% as.matrix(PY[, , k + 1])
+    SSE.r <- SSEs.rrpp[k]
+  }
+  if (Yalt == "resample") {
+    Yr <- Y[sample(nrow(Y)), ]
+    PYr <- Pcor %*% Yr
+    for (i in 1:k) {
+      SSEs.null[i] <- geomorph_SSE(lm(PYr ~ PXs[[i]] - 1))
+      SSEs.resample[i] <- geomorph_SSE(lm(PYr ~ PXs[[i + 1]] - 1))
+    }
+    SS.r <- SSEs.null - SSEs.resample
+    Y <- solve(Pcor) %*% PYr
+    SSE.r <- SSEs.resample[k]
+  }
+  list(SS = SS.r, Y = Y, SSE = SSE.r)
+}
+
+geomorph_Pval.matrix <- function (M) 
+{
+  P = matrix(0, dim(M)[1], dim(M)[2])
+  for (i in 1:dim(M)[1]) {
+    for (j in 1:dim(M)[2]) {
+      y = M[i, j, ]
+      p = geomorph_pval(y)
+      P[i, j] = p
+    }
+  }
+  if (dim(M)[1] > 1 && dim(M)[2] > 1) 
+    diag(P) = 1
+  rownames(P) = dimnames(M)[[1]]
+  colnames(P) = dimnames(M)[[2]]
+  P
+}
+
+geomorph_Effect.size.matrix <- function (M, center = F) 
+{
+  Z = matrix(0, dim(M)[1], dim(M)[2])
+  for (i in 1:dim(M)[1]) {
+    for (j in 1:dim(M)[2]) {
+      y = M[i, j, ]
+      n = length(y)
+      z = geomorph_effect.size(y, center = center) * sqrt((n - 1)/n)
+      Z[i, j] = z
+    }
+  }
+  Z
+}
+
+geomorph_effect.size <- function (x, center = FALSE) 
+{
+  z = scale(x, center = center)
+  z[1]
+}
+
+geomorph_SSE <- function (L) 
+{
+  r <- as.matrix(resid(L))
+  S <- r %*% t(r)
+  sse <- sum(diag(S))
+  sse
+}
+
+geomorph_pval <- function(s)
+{
+  p = length(s)
+  r = rank(s)[1] - 1
+  pv = 1 - r/p
+  pv
+}
+
+geomorph_RRP.submodels <- function (Xs, Y) 
+{
+  p <- ncol(Y)
+  n <- nrow(Y)
+  k <- length(Xs)
+  E <- Yh <- array(0, c(n, p, k))
+  for (i in 1:k) {
+    yhat <- lm(Y ~ Xs[[i]] - 1)$fitted
+    Yh[, , i] <- yhat
+    E[, , i] <- Y - yhat
+  }
+  Er <- E[sample(nrow(E)), , ]
+  if (p == 1) 
+    Er <- array(Er, c(n, p, k))
+  Yr <- Yh + Er
+}
+
+geomorph_two.d.array <- function (A) 
+{
+  pxk <- dim(A)[1] * dim(A)[2]
+  n <- dim(A)[3]
+  tmp <- aperm(A, c(3, 2, 1))
+  dim(tmp) <- c(n, pxk)
+  rownames(tmp) <- dimnames(A)[[3]]
+  return(tmp)
 }
