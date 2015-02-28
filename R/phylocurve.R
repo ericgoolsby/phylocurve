@@ -1,3 +1,8 @@
+.onAttach <- function(libname, pkgname) {
+  #version <- read.dcf(file=system.file("DESCRIPTION", package=pkgname),fields="Version")
+  packageStartupMessage(pkgname, " is beta software. Please report any issues to the package author.")
+}
+
 phylocurve <- function(formula,tree,data,ymin=.01,ymax=.99,ylength=30,tip_coefficients,species_identifier="species",verbose=FALSE)
 {
   if(missing(tip_coefficients))
