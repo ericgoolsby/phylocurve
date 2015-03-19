@@ -62,16 +62,18 @@ Eric W. Goolsby
 require(phytools)
 
 # simulate evolution of a function-valued trait (glm with logit link)
-sim_data <- simcurves()
+sim_data <- sim.curves()
 
-# ancestral curve reconstruction
-anc_recon <- phylocurve(formula = y~x,tree = sim_data$tree,data = sim_data$data)
+# perform ancestral curve reconstruction
+anc_recon <- phylocurve(y~x,tree = sim_data$tree,data = sim_data$data)
+
+# get tip coefficients and aligned function data
+tip_coefficients <- get_tip_coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
+data <- get_aligned_function_data(tip_coefficients)
+
+# estimate evolutionary rates
+rate.mult.fitted <- rate.mult(sim_data$tree,data)
 
 # estimate phylogenetic signal
-phylocurve.signal(tip_coefficients = anc_recon$tip_coefficients,tree = sim_data$tree)
-
-# assess correlated trait evolution with a univariate trait
-X <- fastBM(sim_data$tree)
-phylocurve.pgls(tip_coefficients = anc_recon$tip_coefficients,
-univariate_trait = X,tree = sim_data$tree)
+K.mult(rate.mult.fitted = rate.mult.fitted)
 }

@@ -1,10 +1,18 @@
 import(ape)
 import(phytools)
-importFrom(phylolm,three.point.compute,transf.branch.lengths,pruningwise.branching.times,pruningwise.distFromRoot)
-importFrom(geiger,rescale)
-export(phylocurve,
-       simcurves,
+import(phylolm)
+import(geiger)
+import(abind)
+export(compare.multivar.rate.mult,
+       compare.rate.mult,
+       K.mult,
+       get_aligned_function_data,
        get_tip_coefficients,
-       phylocurve.signal,
-       phylocurve.pgls
+       pgls.mult,
+       phylocurve,
+       rate.mult,
+       sim.mult,
+       sim.curves,
+       
+       print.rate.mult
        )

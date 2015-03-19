@@ -44,6 +44,12 @@ get_tip_coefficients <- function(formula,tree,data,ymin=.01,ymax=.99,ylength=30,
   tip_coefficients
 }
 
+get_aligned_function_data <- function(tip_coefficients,ylength=30,ymin=.01,ymax=.99)
+{
+  Y <- t(apply(tip_coefficients,1,logit_inv,y=seq(ymin,ymax,length=ylength)))
+  data.frame(species=rownames(Y),Y)
+}
+
 pgls_curve <- function(tree,tip_coefficients,varAY,vals_only=FALSE,ymin,ymax,ylength,verbose)
 {
   if(is.null(rownames(tip_coefficients)))
@@ -63,6 +69,7 @@ pgls_curve <- function(tree,tip_coefficients,varAY,vals_only=FALSE,ymin,ymax,yle
     varA <- M[(nspecies+1):(nspecies+Nnode), (nspecies+1):(nspecies+Nnode)]
     colnames(varAY) <- tree$tip.label
   }
+
   nspecies <- length(tree$tip.label)
   Nnode <- tree$Nnode
   X <- matrix(1,nspecies,1)
@@ -80,16 +87,17 @@ pgls_curve <- function(tree,tip_coefficients,varAY,vals_only=FALSE,ymin,ymax,yle
   #return(list(tree=tree,P=t(varAY),Q=(Yinv-t(root))))
   P <- t(varAY)
   Q <- (Yinv-t(root))
+  nvar <- ncol(P)
   var_BM <- apply(Q,2,function(X) t(three.point.compute(tree,X)$PP)/(nspecies-1))
   anc_three_point <- matrix(NA,ncol(Q),ncol(P))
-  DD <- D1 <- matrix(NA,ncol(P),1)
-  for(i in 1:ceiling(ncol(P)/50))
+  DD <- D1 <- matrix(NA,nvar,1)
+  for(i in 1:ceiling(nvar/50))
   {
-    if(verbose) cat(paste(round(i/ceiling(ncol(P)/50)*100),"%   ",sep=""))
-    temp <- three.point.compute(phy = tree,P = P[,(1+((i-1)*50)):min(50+(i-1)*50,ncol(P))],Q = Q)
-    DD[(1+((i-1)*50)):min(50+(i-1)*50,ncol(P))] <- diag(temp$PP)
-    D1[(1+((i-1)*50)):min(50+(i-1)*50,ncol(P))] <- temp$P1
-    anc_three_point[,(1+((i-1)*50)):min(50+(i-1)*50,ncol(P))] <- temp$QP
+    if(verbose) cat(paste(round(i/ceiling(nvar/50)*100),"%   ",sep=""))
+    temp <- three.point.compute(phy = tree,P = P[,(1+((i-1)*50)):min(50+(i-1)*50,nvar)],Q = Q)
+    DD[(1+((i-1)*50)):min(50+(i-1)*50,nvar)] <- diag(temp$PP)
+    D1[(1+((i-1)*50)):min(50+(i-1)*50,nvar)] <- temp$P1
+    anc_three_point[,(1+((i-1)*50)):min(50+(i-1)*50,nvar)] <- temp$QP
   }
   vec11 <- temp$vec11
   var_nodes <- t((diag(varA) - DD + diag((1 - D1) %*% solve(vec11) %*% t(1 - D1))))
@@ -159,7 +167,7 @@ logit_m_func <- function(slope,ec50)
   return(m)
 }
 
-simcurves <- function(nspecies = 30,x_length=20,startree=FALSE,lambda=1,seed)
+sim.curves <- function(nspecies = 30,x_length=20,startree=FALSE,lambda=1,seed)
 {
   if(!missing(seed)) set.seed(seed)
   x <- seq(0,15,length=x_length) # environmental gradient
@@ -190,403 +198,1053 @@ simcurves <- function(nspecies = 30,x_length=20,startree=FALSE,lambda=1,seed)
   ret
 }
 
-# wrapper for physignal
-phylocurve.signal <- function(tip_coefficients,tree,ymin=.01,ymax=.99,ylength=30,iter=1000)
+threepoint_prepare <- function (phy, P, Q = NULL) 
 {
-  x <- tip_coefficients
-  x <- t(apply(x,1,function(X) logit_inv(X,seq(ymin,ymax,length=ylength))))
-  physignal_no_plot(tree,x,iter)
+  if (!inherits(phy, "phylo")) 
+    stop("object \"phy\" is not of class \"phylo\".")
+  phy <- reorder(phy, "pruningwise")
+  n <- length(phy$tip.label)
+  N <- dim(phy$edge)[1]
+  ROOT <- n + 1L
+  root.edge <- if (is.null(phy$root.edge)) 0 else phy$root.edge
+  anc <- phy$edge[, 1]
+  des <- phy$edge[, 2]
+  flag <- 0
+  if (is.null(Q)) {
+    flag <- 1
+    Q <- rep(1, n)
+    names(Q) <- phy$tip.label
+  }
+  P <- as.matrix(P)
+  Q <- as.matrix(Q)
+  if (is.null(rownames(P))) stop("P needs to have row names.")
+  ordr <- match(phy$tip.label, rownames(P))
+  if (sum(is.na(ordr)) > 0) stop("row names of P do not match the tree tip labels.")
+  P <- P[ordr, , drop = F]
+  if (is.null(rownames(Q))) stop("Q needs to have row names.")
+  ordr <- match(phy$tip.label, rownames(Q))
+  if (sum(is.na(ordr)) > 0) stop("row names of Q do not match the tree tip labels.")
+  Q <- Q[ordr, , drop = F]
+  if (nrow(P) != n) 
+    stop("the number of rows in P needs to be the same as the number of tips in the tree.")
+  if (nrow(Q) != n) 
+    stop("the number of rows in Q needs to be the same as the number of tips in the tree.")
+  P <- cbind(rep(1, n), P)
+  Q <- cbind(rep(1, n), Q)
+  colP <- ncol(P)
+  colQ <- ncol(Q)
+  nout <- 2 + colP + colP^2 + colQ + colQ^2 + colP * colQ
+  return(list(arg1=as.integer(N), arg2=as.integer(n), arg3=as.integer(phy$Nnode), 
+              arg4=as.integer(colP), arg5=as.integer(colQ), arg6=as.integer(ROOT), 
+              arg7=as.double(root.edge), arg8=as.double(phy$edge.length), arg9=as.integer(des), 
+              arg10=as.integer(anc), arg11=as.double(as.vector(P)), arg12=as.double(as.vector(Q)), 
+              result = double(nout),colP=colP,colQ=colQ))
 }
 
-# faster version of physignal from geomorph package by avoiding multiple calls to solve()
-# also avoids plotting
-physignal_no_plot <- function (phy, A, iter = 249, method = c("Kmult", "SSC")) 
+threepoint_direct <- function(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, result,colP,colQ)
 {
-  method <- match.arg(method)
-  if (any(is.na(A)) == T) {
-    stop("Data matrix contains missing values. Estimate these first (see 'estimate.missing').")
-  }
-  if (length(dim(A)) == 3) {
-    if (is.null(dimnames(A)[[3]])) {
-      stop("Data matrix does not include taxa names as dimnames for 3rd dimension.")
-    }
-    x <- geomorph_two.d.array(A)
-  }
-  if (length(dim(A)) == 2) {
-    if (is.null(rownames(A))) {
-      stop("Data matrix does not include taxa names as dimnames for rows.")
-    }
-    x <- A
-  }
-  if (class(phy) != "phylo") 
-    stop("tree must be of class 'phylo.'")
-  if (!is.binary.tree(phy)) 
-    stop("tree is not fully bifurcating.")
-  N <- length(phy$tip.label)
-  if (N != dim(x)[1]) {
-    stop("Number of taxa in data matrix and tree are not not equal.")
-  }
-  if (length(match(rownames(x), phy$tip.label)) != N) 
-    stop("Data matrix missing some taxa present on the tree.")
-  if (length(match(phy$tip.label, rownames(x))) != N) 
-    stop("Tree missing some taxa in the data matrix.")
-  if (any(is.na(match(sort(phy$tip.label), sort(rownames(x))))) == 
-        T) {
-    stop("Names do not match between tree and data matrix.")
-  }
-  x <- x[phy$tip.label, ]
-  if (is.null(dim(x)) == TRUE) {
-    x <- matrix(x, dimnames = list(names(x)))
-  }
-  if (method == "Kmult") {
-    Kmult <- function(x, phy,C,solveC,D.mat,K.denom) {
-      x <- as.matrix(x)
-      N <- length(phy$tip.label)
-      ones <- array(1, N)
-      C <- C[row.names(x), row.names(x)]
-      solveC <- solveC[row.names(x), row.names(x)]
-      D.mat <- D.mat[row.names(x), row.names(x)]
-      a.obs <- colSums(solveC) %*% x/sum(solveC)
-      distmat <- as.matrix(dist(rbind(as.matrix(x), a.obs)))
-      MSEobs.d <- sum(distmat[(1:N), (N + 1)]^2)
-      dist.adj <- as.matrix(dist(rbind((D.mat %*% (x - (ones %*% a.obs))), 0)))
-      MSE.d <- sum(dist.adj[(1:N), (N + 1)]^2)
-      K.stat <- (MSEobs.d/MSE.d)/K.denom
-      return(K.stat)
-    }
-    C <- vcv.phylo(phy)
-    solveC <- solve(C)
-    eigC <- eigen(C)
-    D.mat <- solve(eigC$vectors %*% diag(sqrt(eigC$values)) %*% 
-                     t(eigC$vectors))
-    colnames(D.mat) <- rownames(D.mat) <- colnames(C)
-    ones <- array(1, N)
-    K.denom <- (sum(diag(C)) - N * solve(t(ones) %*% 
-                                           solveC %*% ones))/(N - 1)
-    K.obs <- Kmult(x, phy,C,solveC,D.mat,K.denom)
-    P.val <- 1
-    K.val <- rep(0, iter)
-    for (i in 1:iter) {
-      x.r <- as.matrix(x[sample(nrow(x)), ])
-      rownames(x.r) <- rownames(x)
-      K.rand <- Kmult(x.r, phy,C,solveC,D.mat,K.denom)
-      P.val <- ifelse(K.rand >= K.obs, P.val + 1, P.val)
-      K.val[i] <- K.rand
-    }
-    P.val <- P.val/(iter + 1)
-    K.val[iter + 1] = K.obs
-    if (dim(x)[2] > 1) {
-      #plotGMPhyloMorphoSpace(phy, A, ancStates = FALSE)
-    }
-    return(list(phy.signal = K.obs, pvalue = P.val))
-  }
-  if (method == "SSC") {
-    anc.states <- NULL
-    options(warn = -1)
-    for (i in 1:ncol(x)) {
-      tmp <- as.vector(fastAnc(phy, x[, i]))
-      anc.states <- cbind(anc.states, tmp)
-    }
-    colnames(anc.states) <- NULL
-    dist.mat <- as.matrix(dist(rbind(as.matrix(x), as.matrix(anc.states)))^2)
-    SSC.o <- 0
-    for (i in 1:nrow(phy$edge)) {
-      SSC.o <- SSC.o + dist.mat[phy$edge[i, 1], phy$edge[i, 
-                                                         2]]
-    }
-    P.val <- 1
-    SSC.val <- rep(0, iter)
-    for (ii in 1:iter) {
-      x.r <- x[sample(nrow(x)), ]
-      if (is.null(dim(x.r)) == TRUE) {
-        x.r <- matrix(x.r)
-      }
-      row.names(x.r) <- row.names(x)
-      anc.states.r <- NULL
-      options(warn = -1)
-      for (i in 1:ncol(x.r)) {
-        tmp <- as.vector(fastAnc(phy, x.r[, i]))
-        anc.states.r <- cbind(anc.states.r, tmp)
-      }
-      colnames(anc.states.r) <- NULL
-      dist.mat.r <- as.matrix(dist(rbind(as.matrix(x.r), 
-                                         as.matrix(anc.states.r)))^2)
-      SSC.r <- 0
-      for (i in 1:nrow(phy$edge)) {
-        SSC.r <- SSC.r + dist.mat.r[phy$edge[i, 1], phy$edge[i, 
-                                                             2]]
-      }
-      P.val <- ifelse(SSC.r <= SSC.o, P.val + 1, P.val)
-      SSC.val[ii] <- SSC.r
-    }
-    P.val <- P.val/(iter + 1)
-    SSC.val[iter + 1] = SSC.o
-    if (dim(x)[2] > 1) {
-      #plotGMPhyloMorphoSpace(phy, A, ancStates = FALSE)
-    }
-    return(list(phy.signal = SSC.o, pvalue = P.val))
-  }
+  tmp <- .C("threepoint", arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, result=result)$result
+  PP <- matrix(tmp[2 + colP + 1:(colP^2)], colP, colP)
+  QQ <- matrix(tmp[2 + colP + colP^2 + colQ + 1:(colQ^2)], colQ, 
+               colQ)
+  QP <- matrix(tmp[2 + colP + colP^2 + colQ + colQ^2 + 1:(colP * 
+                                                            colQ)], colQ, colP)
+  return(list(vec11 = PP[1, 1], P1 = PP[1, -1], PP = PP[-1, 
+                                                        -1], Q1 = QQ[1, -1], QQ = QQ[-1, -1], QP = QP[-1, -1], logd = tmp[1]))
 }
 
-# wrapper for procD.pgls
-phylocurve.pgls <- function(tip_coefficients,univariate_trait,tree,ymin=.01,ymax=.99,ylength=30,iter=1000)
+environment(threepoint_direct) <- asNamespace('phylolm')
+
+sim.mult <- function(nspecies,R,error,nreps=1,nmissing=0,model,parameters,anc,tree,seed,nsims=1)
 {
-  x <- tip_coefficients
-  y <- t(apply(x,1,function(X) logit_inv(X,seq(ymin,ymax,length=ylength))))
-  #procd <- procD.pgls(f1 = y~univariate_trait,phy = tree,iter = iter)
-  procd <- procD.pgls2(f1 = y~univariate_trait,phy = tree,iter = iter, y=y)
-  #list(procd=procd,univariate_trait=univariate_trait)
-  procd
+  if(nreps>1 & missing(error)) error <- rep(.5,ncol(R))
+  if(length(R)==1) R <- matrix(R)
+  if(!missing(seed)) set.seed(seed)
+  if(missing(tree)) tree <- pbtree(n=nspecies)
+  if(missing(anc)) anc <- rep(0,ncol(R)) else if(length(anc)==1) anc <- rep(anc,ncol(R))
+  if(!missing(model))
+  {
+    atree <- tree
+    args <- list(x=atree,model=model[1],lambda=1)
+    for(i in 1:length(model))
+    {
+      args[[2]] <- model[i]
+      names(args)[3] <- names(parameters)[i]
+      args[[3]] <- parameters[[i]]
+      atree <- do.call(rescale,args)
+      #atree <- transf.branch.lengths(phy = atree,model = model[i],parameters = parameters[i])$tree
+    }
+  } else  atree <- tree
+  ret <- vector("list",nsims)
+  for(j in 1:nsims)
+  {
+    if(length(R)>1) Y <- sim.corrs(tree = atree,vcv = R,anc = anc,internal = FALSE) else Y <- as.matrix(cbind(fastBM(atree,a = anc,sig2 = R[1,1])))
+    
+    if(nreps>1)
+    {
+      Y_raw <- matrix(0,nrow = nspecies*nreps,ncol = ncol(R))
+      for(i in 1:nreps)
+      {
+        Y_raw[1:nspecies+(nspecies*(i-1)),] <- matrix(rnorm(n = length(Y),mean = Y,sd = sqrt(as.double(t(matrix(rep(error,nspecies),nrow = length(error),ncol = nspecies))))),nrow = nspecies,ncol = ncol(R))
+      }
+    } else Y_raw <- Y
+    if(nmissing>0)
+    {
+      Y_raw[sample(x = length(Y_raw),size = nmissing)] <- NA
+    }
+    ### reorder species by tree tips
+    Y_raw <- data.frame(species=as.character(rep(tree$tip.label,nreps)),Y_raw)
+    colnames(Y_raw)[1:ncol(R)+1] <- colnames(Y) <- paste("V",1:ncol(R),sep="")
+    Y_means <- apply(Y_raw[,1:ncol(R)+1,drop=F],2,function(X) tapply(X,Y_raw$species,FUN = function(Y) mean(Y,na.rm = TRUE)))
+    Y_means <- Y_means[tree$tip.label,,drop=F]
+    Y_array <- array(t(Y_means),dim = c(ncol(R),1,nspecies),dimnames = list(colnames(Y),NULL,rownames(Y_means))) 
+    Y_means <- data.frame(species=as.character(rownames(Y_means)),Y_means)
+    ret[[j]] <- list(Y_means=Y_means,Y_raw=Y_raw,Y_array=Y_array,Y_original=Y,tree=tree,tree_sim=atree)
+  }
+  if(nsims==1) ret[[1]] else ret
 }
 
-procD.pgls2 <- function (f1, phy, iter = 999, int.first = FALSE, RRPP = FALSE, 
-          verbose = FALSE,y) 
+rate.mult <- function(tree=tree,Y=Y,type=c("mult","diag","all"),
+                      method=c("REML","ML"),error=c("none","estimate","supply"),
+                      error_n=20,error_supply,model="BM",fixed_sigma2,fixed_model_pars)
 {
-  data = NULL
-  form.in <- formula(f1)
-  if (int.first == TRUE) 
-    ko = TRUE
-  else ko = FALSE
-  Terms <- terms(form.in, keep.order = ko)
-  k <- length(attr(Terms, "term.labels"))
-  mf <- model.frame(form.in)
-  Y <- as.matrix(mf[1])
-  if (length(dim(Y)) != 2) {
-    stop("Response matrix (shape) not a 2D array. Use 'two.d.array' first.")
+  rate.mult.args <- as.list(match.call())
+  rate.mult.args <- rate.mult.args[2:length(rate.mult.args)]
+  if(is.null(rate.mult.args$error)) rate.mult.args$error <- "none"
+  if(is.null(rate.mult.args$model)) rate.mult.args$model <- "BM"
+  if(missing(type)) rate.mult.args$type <- type[1]
+  error <- error[1]
+  if(missing(fixed_sigma2)) fixed_sigma2 <- NA
+  if(missing(fixed_model_pars)) fixed_model_pars <- NA
+  nspecies <- length(tree$tip.label)
+  if(error=="estimate")
+  {
+    mean_data <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) tapply(X,Y[,1],function(Y) mean(Y,na.rm=TRUE)))
+    mean_data <- data.frame(species=rownames(mean_data),mean_data)
+    vars <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) tapply(X,Y[,1],function(Y) var(Y,na.rm=TRUE)))
+    vars[is.na(vars)] <- 0
+    ns <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) tapply(X,Y[,1],function(Y) length(which(!is.na(Y)))))
+    num <- colSums(vars * (ns-1))
+    temp_ns <- ns
+    temp_ns[temp_ns<1] <- NA
+    denom <- as.double(colSums(ns,na.rm = TRUE)) - as.double(apply(temp_ns,2,function(X) length(which(!is.na(X)))))
+    pooled <- num / denom
+    pooled[is.na(pooled)] <- 0
+    pooled <- matrix(1,nspecies) %*% pooled
+    #pooled <- matrix(1,nspecies) %*% colSums((ns-1)*vars/apply(ns,2,function(X) sum(X[X>1 & !is.na(X)])-length(X[X>1 & !is.na(X)])),na.rm=TRUE)
+    vars[ns<error_n] <- pooled[ns<error_n]
+    temp_ns[is.na(temp_ns)] <- 1
+    errs <- vars[tree$tip.label,,drop=FALSE] / temp_ns
+    Y <- mean_data[tree$tip.label,,drop=FALSE]
+  } else if(error=="supply")
+  {
+    if(length(unlist(error_supply))==(ncol(Y)-1))
+    {
+      error_supply <- matrix(error_supply,1)
+      vars <- matrix(1,nspecies) %*% error_supply
+      rownames(vars) <- tree$tip.label
+    } else vars <- error_supply
+    errs <- vars[tree$tip.label,,drop=FALSE]
   }
-  if (any(is.na(Y)) == T) {
-    stop("Response data matrix (shape) contains missing values. Estimate these first (see 'estimate.missing').")
+  
+  if(is.array(Y))
+  {
+    var_names <- names(Y[,,1])
+    Y <- data.frame(species=names(Y[1,,]),t(matrix(Y,ncol = nspecies)),row.names=names(Y[1,,]))
+    colnames(Y)[2:ncol(Y)] <- var_names
   }
-  if (is.null(dimnames(Y)[[1]])) {
-    stop("No species names with Y-data")
+  if(nrow(Y)>length(tree$tip.label))
+  {
+    mean_data <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) tapply(X,Y[,1],function(Y) mean(Y,na.rm=TRUE)))
+    mean_data <- data.frame(species=rownames(mean_data),mean_data)
+    Y <- mean_data[tree$tip.label,,drop=FALSE]
   }
-  N <- length(phy$tip.label)
-  if (length(match(rownames(Y), phy$tip.label)) != N) 
-    stop("Data matrix missing some taxa present on the tree.")
-  if (length(match(phy$tip.label, rownames(Y))) != N) 
-    stop("Tree missing some taxa in the data matrix.")
-  C <- vcv.phylo(phy)
-  C <- C[rownames(Y), rownames(Y)]
-  eigC <- eigen(C)
-  lambda <- zapsmall(eigC$values)
-  if (any(lambda == 0)) {
-    warning("Singular phylogenetic covariance matrix. Proceed with caution")
-    lambda = lambda[lambda > 0]
+  type <- type[1]
+  method <- method[1]
+  nvar <- ncol(Y)-1
+  ones <- rbind(setNames(rep(1,nspecies),nm = tree$tip.label))
+  anc <- sigma2 <- SS <- rbind(setNames(numeric(nvar),colnames(Y)[1:nvar+1]))
+  P <- Y[,1:nvar+1,drop=F]
+  
+  ########## Below code adapted from phylolm package
+  OU <- c("OUrandomRoot","OUfixedRoot")
+  tol <- 1e-10  
+  tree <- reorder(tree,"pruningwise")
+  N <- dim(tree$edge)[1]
+  ROOT <- nspecies + 1L
+  anc <- tree$edge[, 1]
+  des <- tree$edge[, 2]
+  externalEdge <- des<=nspecies
+  
+  dis <- pruningwise.distFromRoot(tree)[1:nspecies]
+  Tmax <- mean(dis)
+  ## Default bounds
+  bounds.default <- matrix(c(1e-7/Tmax,50/Tmax,1e-7/Tmax,50/Tmax,1e-7,1,1e-6,1,1e-5,3,-3/Tmax,0), ncol=2, byrow=TRUE)
+  #bounds.default <- matrix(c(1/Tmax,50/Tmax,1/Tmax,50/Tmax,1e-7,1,1e-6,1,1e-5,3,-3/Tmax,0), ncol=2, byrow=TRUE)
+  rownames(bounds.default) <- c("alpha","alpha","lambda","kappa","delta","rate")
+  colnames(bounds.default) <- c("min","max")
+  ## Default starting values
+  starting.values.default <- c(0.5/Tmax,0.5/Tmax,0.5,0.5,0.5,-1/Tmax)
+  starting.values.default[1:5] <- log(starting.values.default[1:5])
+  bounds.default[1:5,] <- log(bounds.default[1:5,])
+  names(starting.values.default) <- c("OUrandomRoot","OUfixedRoot","lambda","kappa","delta","EB")
+  model_i <- match(model,names(starting.values.default))
+  bounds.default <- bounds.default[model_i,,drop=FALSE]
+  starting.values.default <- starting.values.default[model_i]
+  names(starting.values.default) <- rownames(bounds.default)
+  if(model[1]=="BM") starting.values.default <- bounds.default <- NULL
+  
+  flag <- 0 # flag and D are used for OU model if tree is not ultrametric:
+  D <- NULL # for the generalized 3-point structure
+  ## preparing for OU model
+  if (any(model %in% OU)) {
+    D <- numeric(nspecies)
+    if (!is.ultrametric(tree)) flag <- 1
+    dis <- pruningwise.distFromRoot(tree)
+    Tmax <- max(dis[1:nspecies])
+    D = Tmax - dis[1:nspecies]
+    D = D - mean(D)
+    tree$edge.length[externalEdge] <- tree$edge.length[externalEdge] + D[des[externalEdge]]
+    ## phy is now ultrametric, with height Tmax:
+    Tmax <- Tmax + min(D)
   }
-  eigC.vect = eigC$vectors[, 1:(length(lambda))]
-  Pcor <- solve(eigC.vect %*% diag(sqrt(lambda)) %*% t(eigC.vect))
-  PY <- Pcor %*% Y
-  Xs = geomorph_mod.mats(mf)
-  anova.parts.obs <- geomorph_anova.pgls.parts(form.in, X = NULL, Pcor, 
-                                      Yalt = "observed", keep.order = ko)
-  anova.tab <- anova.parts.obs$table
-  df <- anova.parts.obs$df[1:k]
-  dfE <- anova.parts.obs$df[k + 1]
-  P <- array(0, c(k, 1, iter + 1))
-  P[, , 1] <- SS.obs <- anova.parts.obs$F[1:k]
+  ########## Above code adapted from phylolm package
+  
+  temp_tree <- tree
+  if(any(is.na(Y))) missing_data <- TRUE else missing_data <- FALSE
+  if(!missing_data & error=="none" & model[1]=="BM") # basic mult model: no missing data, no within-species variation, BM model
+  {
+    if(!is.na(fixed_sigma2[1]))
+    {
+      ret_val <- est_BM(Y = Y,tree = tree,type = type,method = method,nspecies = nspecies,nvar = nvar,ones = ones,anc = anc,sigma2 = sigma2,SS = SS,fixed_sigma2 = fixed_sigma2)
+    } else
+    {
+      ret_val <- est_BM(Y = Y,tree = tree,type = type,method = method,nspecies = nspecies,nvar = nvar,ones = ones,anc = anc,sigma2 = sigma2,SS = SS)
+    }
+    logL <- ret_val$logL
+    sigma2 <- ret_val$sigma2
+  } else
+  {
+    f <- function(theta,temp_Y,temp_tree,model,temp_error,temp_nspecies,temp_nvar,temp_ones,temp_anc,temp_sigma2,temp_SS)
+    {
+      theta[names(theta)!="rate"] <- exp(theta[names(theta)!="rate"])
+      if(flag)
+      {
+        temp_Y <- exp(-theta["alpha"]*D) * temp_Y
+      }
+      for(j in 1:length(model))
+      {
+        if(model[1]!="BM")
+        {
+          if(is.na(fixed_model_pars[1]))
+          {
+            temp_tree <- transf.branch.lengths(phy = temp_tree,model = model[j],parameters = as.list(theta[is.na(fixed_sigma2[1])+j]),check.ultrametric = FALSE,D = D,check.names = FALSE)$tree
+          } else
+          {
+            temp_tree <- transf.branch.lengths(phy = temp_tree,model = model[j],parameters = as.list(fixed_model_pars[j]),check.ultrametric = FALSE,D = D,check.names = FALSE)$tree
+          }
+        }
+      }
+      if(any(OU%in%model) & !is.na(fixed_sigma2[1])) temp_tree$edge.length <- temp_tree$edge.length / 2/if(is.na(fixed_model_pars[1])) theta[which(OU%in%model)] else fixed_model_pars[which(OU%in%model)]
+      if(is.na(fixed_sigma2[1])) temp_tree$edge.length <- temp_tree$edge.length * theta[1] else temp_tree$edge.length <- temp_tree$edge.length * fixed_sigma2
+      if(error!="none") temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] <- temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] + temp_error[temp_tree$tip.label[temp_tree$edge[temp_tree$edge[,2]<=temp_nspecies,2]],drop=F]
+      logL <- try(est_BM(Y = temp_Y,tree = temp_tree,type = type,method = method,nspecies = temp_nspecies,
+                         nvar = temp_nvar,ones = temp_ones,anc = temp_anc,sigma2 = temp_sigma2,SS = temp_SS,calc_sigma = FALSE)$logL,silent=TRUE)
+      if(class(logL)=="try-error") return(-Inf)
+      if(is.na(logL)) -Inf else logL
+    }
+    if(type=="mult" & !missing_data & error=="none" & model[1]!="BM") # basic mult model but not BM model
+    {
+      init <- c(sigma2=log(est_BM(Y = Y,tree = tree,type = type,method = method,nspecies = nspecies,
+                                  nvar = nvar,ones = ones,anc = anc,sigma2 = sigma2,SS = SS)$sigma2),starting.values.default)
+      if(!is.na(fixed_sigma2[1]))
+      {
+        if(is.na(fixed_model_pars[1]))
+        {
+          ret <- optim(init[2:length(init)],f,method = "L-BFGS-B",lower = bounds.default[,1],upper = bounds.default[,2],control=list(fnscale=-1),
+                       temp_Y=Y,temp_tree=temp_tree,model=model,temp_error=error,temp_nspecies=nspecies,temp_nvar=nvar,temp_ones=ones,temp_anc=anc,temp_sigma2=sigma2,temp_SS=SS)
+          ret <- list(par=c(log(fixed_sigma2),ret$par),val=ret$val)
+        } else
+        {
+          logL <- f(fixed_model_pars,temp_Y=Y,temp_tree=temp_tree,model=model,temp_error=error,temp_nspecies=nspecies,temp_nvar=nvar,temp_ones=ones,temp_anc=anc,temp_sigma2=sigma2,temp_SS=SS)
+          fixed_model_pars[names(fixed_model_pars)!="rate"] <- log(fixed_model_pars[names(fixed_model_pars)!="rate"])
+          ret <- list(par=c(log(fixed_sigma2),fixed_model_pars),val=logL)
+        }
+      } else if(!is.na(fixed_model_pars[1]))
+      {
+        ret <- optim(init[1],f,method = "BFGS",control=list(fnscale=-1),
+                     temp_Y=Y,temp_tree=temp_tree,model=model,temp_error=error,temp_nspecies=nspecies,temp_nvar=nvar,temp_ones=ones,temp_anc=anc,temp_sigma2=sigma2,temp_SS=SS)
+        fixed_model_pars[names(fixed_model_pars)!="rate"] <- log(fixed_model_pars[names(fixed_model_pars)!="rate"])
+        ret <- list(par=c(ret$par,fixed_model_pars),val=ret$val)
+      } else
+      {
+        ret <- optim(init,f,method = "L-BFGS-B",lower = c(-Inf,bounds.default[,1]),upper = c(Inf,bounds.default[,2]),control=list(fnscale=-1),
+                     temp_Y=Y,temp_tree=temp_tree,model=model,temp_error=error,temp_nspecies=nspecies,temp_nvar=nvar,temp_ones=ones,temp_anc=anc,temp_sigma2=sigma2,temp_SS=SS)
+      }
+      logL <- ret$val
+      sigma2 <- exp(ret$par[1])
+      pars <- if(length(ret$par)>1) ret$par[2:length(ret$par)] else NA
+      pars[names(pars)!="rate"] <- exp(pars[names(pars)!="rate"])
+    } else if(type=="mult")# & (missing_data | error!="none")) # mult model with missing data and/or measurement error (with or without BM evolutionary model)
+    {
+      init <- 0
+      if(is.na(fixed_sigma2[1]))
+      {
+        for(i in 1:nvar)
+        {
+          temp_tree <- tree
+          temp_nspecies <- nspecies
+          temp_ones <- ones
+          temp_Y <- Y[,c(1,i+1),drop=F]
+          if(missing_data)
+          {
+            if(any(is.na(Y[,i+1])))
+            {
+              keep <- which(!is.na(Y[,i+1]))
+              temp_tree <- drop.tip(tree,tip = as.character(Y[-keep,1]))
+              temp_nspecies <- length(keep)
+              temp_Y <- Y[keep,c(1,i+1),drop=F]
+              temp_ones <- temp_ones[,keep,drop=F]
+            }
+          }
+          init <- init + (temp_nspecies-1)*est_BM(Y = temp_Y,tree = temp_tree,type = type,method = method,nspecies = nspecies,
+                                                  nvar = 1,ones = temp_ones,anc = anc[i],sigma2 = sigma2[i],SS = SS[i])$sigma2
+        }
+        init <- init / (sum(apply(Y[,1:nvar+1,drop=F],2,function(X) tapply(X,Y$species,function(Y) length(which(!is.na(Y))))),na.rm = TRUE) - nvar)
+      } else init <- fixed_sigma2
+      #if(!is.na(fixed_model_pars[1])) fixed_model_pars[names(fixed_model_pars)!="rate"] <- log(fixed_model_pars[names(fixed_model_pars)!="rate"])
+      init <- c(log(init),if(is.na(fixed_model_pars[1])) starting.values.default else fixed_model_pars)
+      names(init)[1] <- "sigma2"
+      f_mult <- function(theta)
+      {
+        theta[names(theta)!="rate"] <- exp(theta[names(theta)!="rate"])
+        logL <- 0
+        temp_tree <- tree
+        for(j in 1:length(model))
+        {
+          if(model[1]!="BM")
+          {
+            if(is.na(fixed_model_pars[1]))
+            {
+              temp_tree <- transf.branch.lengths(phy = temp_tree,model = model[j],parameters = as.list(theta[is.na(fixed_sigma2[1])+j]),check.ultrametric = FALSE,D = D,check.names = FALSE)$tree
+            } else
+            {
+              temp_tree <- transf.branch.lengths(phy = temp_tree,model = model[j],parameters = as.list(fixed_model_pars[j]),check.ultrametric = FALSE,D = D,check.names = FALSE)$tree
+            }
+          }
+        }
+        
+        if(any(OU%in%model) & !is.na(fixed_sigma2[1])) temp_tree$edge.length <- temp_tree$edge.length / 2/if(is.na(fixed_model_pars[1])) theta[which(OU%in%model)] else fixed_model_pars[which(OU%in%model)]
+        if(is.na(fixed_sigma2[1])) temp_tree$edge.length <- temp_tree$edge.length * theta[1] else temp_tree$edge.length <- temp_tree$edge.length * fixed_sigma2
+        if(flag)
+        {
+          Y <- exp(-theta["alpha"]*D) * Y
+        }
+        temp_nspecies <- length(temp_tree$tip.label)
+        perm_tree <- temp_tree
+        for(i in 1:nvar)
+        {
+          temp_tree <- perm_tree
+          if(error!="none") temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] <- temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] + errs[temp_tree$edge[temp_tree$edge[,2]<=temp_nspecies,2],i,drop=F]
+          
+          temp_nspecies <- nspecies
+          temp_ones <- ones
+          temp_Y <- Y[,c(1,i+1),drop=F]
+          temp_D <- D
+          if(missing_data)
+          {
+            if(any(is.na(Y[,i+1])))
+            {
+              keep <- which(!is.na(Y[,i+1]))
+              temp_tree <- drop.tip(temp_tree,tip = as.character(Y[-keep,1]))
+              temp_nspecies <- length(keep)
+              temp_Y <- Y[keep,c(1,i+1),drop=F]
+              temp_ones <- temp_ones[,keep,drop=F]
+              temp_D <- temp_D[keep]
+            }
+          }
+          logL <- try(logL + 
+                        est_BM(Y = temp_Y,tree = temp_tree,type = type,method = method,nspecies = temp_nspecies,
+                               nvar = 1,ones = temp_ones,anc = 0,sigma2 = 0,SS = 0,calc_sigma = FALSE)$logL,silent=TRUE)
+          
+          if(class(logL)=="try-error") return(-Inf)
+        }
+        if(is.na(logL)) -Inf else logL
+      }
+      if(!is.na(fixed_sigma2[1]) & model[1]!="BM")
+      {
+        if(is.na(fixed_model_pars[1]))
+        {
+          ret <- optim(init[2:length(init)],f_mult,method = "L-BFGS-B",lower = bounds.default[,1],upper = bounds.default[,2],control=list(fnscale=-1))
+          ret <- list(par=c(log(fixed_sigma2),ret$par),val=ret$val)
+        } else
+        {
+          logL <- f_mult(fixed_model_pars)
+          fixed_model_pars[names(fixed_model_pars)!="rate"] <- log(fixed_model_pars[names(fixed_model_pars)!="rate"])
+          ret <- list(par=c(log(fixed_sigma2),fixed_model_pars),val=logL)
+        }
+      } else if(!is.na(fixed_model_pars[1]))
+      {
+        ret <- optim(init[1],f_mult,method = "BFGS",control=list(fnscale=-1))
+        fixed_model_pars[names(fixed_model_pars)!="rate"] <- log(fixed_model_pars[names(fixed_model_pars)!="rate"])
+        ret <- list(par=c(ret$par,fixed_model_pars),val=ret$val)
+      } else
+      {
+        ret <- optim(init,f_mult,method = "L-BFGS-B",lower = c(-Inf,bounds.default[,1]),upper = c(Inf,bounds.default[,2]),control=list(fnscale=-1))
+      }
+      logL <- ret$val
+      sigma2 <- exp(ret$par[1])
+      if(model[1]=="BM")
+      {
+        pars <- NA 
+      } else
+      {
+        if(is.na(fixed_model_pars))
+        {
+          pars <- ret$par[(is.na(fixed_sigma2[1]) + 1):length(ret$par)]
+        } else pars <- fixed_model_pars
+      }
+      pars[names(pars)!="rate"] <- exp(pars[names(pars)!="rate"])
+    } else if(type=="diag") # diag model with missing data and/or measurement error (with or without BM evolutionary model)
+    {
+      init <- rep(0,nvar)
+      if(is.na(fixed_sigma2[1]))
+      {
+        for(i in 1:nvar)
+        {
+          temp_tree <- tree
+          temp_nspecies <- nspecies
+          temp_ones <- ones
+          temp_Y <- Y[,c(1,i+1),drop=F]
+          if(missing_data)
+          {
+            if(any(is.na(Y[,i+1])))
+            {
+              keep <- which(!is.na(Y[,i+1]))
+              temp_tree <- drop.tip(tree,tip = as.character(Y[-keep,1]))
+              temp_nspecies <- length(keep)
+              temp_Y <- Y[keep,c(1,i+1),drop=F]
+              temp_ones <- temp_ones[,keep,drop=F]
+            }
+          }
+          init[i] <- est_BM(Y = temp_Y,tree = temp_tree,type = type,method = method,nspecies = nspecies,
+                            nvar = 1,ones = temp_ones,anc = anc[i],sigma2 = sigma2[i],SS = SS[i])$sigma2
+        }
+      } else init <- fixed_sigma2
+      init <- c(log(init),if(is.na(fixed_model_pars[1])) starting.values.default else fixed_model_pars)
+      names(init)[1:nvar] <- "sigma2"
+      f_diag <- function(theta,i,temp_tree)
+      {
+        theta[names(theta)!="rate"] <- exp(theta[names(theta)!="rate"])
+        logL <- 0
+        if(is.na(fixed_sigma2[1])) temp_tree$edge.length <- temp_tree$edge.length * theta[1] else temp_tree$edge.length <- temp_tree$edge.length * fixed_sigma2[i]
+        
+        if(flag)
+        {
+          Y <- exp(-theta["alpha"]*D) * Y
+        }  
+        temp_tree <- temp_tree
+        temp_nspecies <- length(temp_tree$tip.label)
+        
+        if(error!="none") temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] <- temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] + errs[temp_tree$edge[temp_tree$edge[,2]<=temp_nspecies,2],i,drop=F]
+        
+        temp_nspecies <- nspecies
+        temp_ones <- ones
+        temp_Y <- Y[,c(1,i+1),drop=F]
+        temp_D <- D
+        if(missing_data)
+        {
+          if(any(is.na(Y[,i+1])))
+          {
+            keep <- which(!is.na(Y[,i+1]))
+            temp_tree <- drop.tip(temp_tree,tip = as.character(Y[-keep,1]))
+            temp_nspecies <- length(keep)
+            temp_Y <- Y[keep,c(1,i+1),drop=F]
+            temp_ones <- temp_ones[,keep,drop=F]
+            temp_D <- temp_D[keep]
+          }
+        }
+        logL <- try(est_BM(Y = temp_Y,tree = temp_tree,type = type,method = method,nspecies = temp_nspecies,
+                           nvar = 1,ones = temp_ones,anc = 0,sigma2 = 0,SS = 0,calc_sigma = FALSE)$logL,silent=TRUE)
+        if(class(logL)=="try-error") return(-Inf)
+        if(is.na(logL)) -Inf else logL
+      }
+      
+      if(model[1]=="BM")
+      {
+        #sigma2 <- log(init)
+        sigma2 <- init
+        logL <- 0
+        for(i in 1:nvar)
+        {
+          if(is.na(fixed_sigma2[1]))
+          {
+            temp_ret <- optim(sigma2[i],f_diag,method = "BFGS",control=list(fnscale=-1),i=i,temp_tree=tree)
+            logL <- logL + temp_ret$val
+            sigma2[i] <- log(temp_ret$par)
+          } else
+          {
+            logL <- logL + f_diag(0,i=i,temp_tree=tree)
+            sigma2[i] <- fixed_sigma2[i]
+          }
+        }
+        pars <- NA
+      } else
+      {
+        f_diag_mod <- function(theta,ret_sigma2 = FALSE)
+        {
+          #sigma2 <- log(init[1:nvar])
+          sigma2 <- init[1:nvar]
+          theta[names(theta)!="rate"] <- exp(theta[names(theta)!="rate"])
+          temp_tree <- tree
+          #for(j in 1:length(model))
+          #{
+          #  if(model[1]!="BM")
+          #  {
+          #    temp_tree <- transf.branch.lengths(phy = temp_tree,model = model[j],parameters = as.list(theta[j]),check.ultrametric = FALSE,D = D,check.names = FALSE)$tree          
+          #  }
+          #}
+          
+          for(j in 1:length(model))
+          {
+            if(model[1]!="BM")
+            {
+              if(is.na(fixed_model_pars[1]))
+              {
+                temp_tree <- transf.branch.lengths(phy = temp_tree,model = model[j],parameters = as.list(theta[j]),check.ultrametric = FALSE,D = D,check.names = FALSE)$tree
+              } else
+              {
+                temp_tree <- transf.branch.lengths(phy = temp_tree,model = model[j],parameters = as.list(fixed_model_pars[j]),check.ultrametric = FALSE,D = D,check.names = FALSE)$tree
+              }
+            }
+          }
+          
+          if(any(OU%in%model) & !is.na(fixed_sigma2[1])) temp_tree$edge.length <- temp_tree$edge.length / 2/if(is.na(fixed_model_pars[1])) theta[which(OU%in%model)] else fixed_model_pars[which(OU%in%model)]
+          
+          model <- "BM"          
+          logL <- 0
+          for(i in 1:nvar)
+          {  
+            #temp_ret <- optim(c(sigma2[i]),f_diag,method = "BFGS",control=list(fnscale=-1),i=i,temp_tree=temp_tree)            
+            #logL <- logL + temp_ret$val
+            #sigma2[i] <- temp_ret$par
+            
+            if(is.na(fixed_sigma2[1]))
+            {
+              temp_ret <- optim(sigma2[i],f_diag,method = "BFGS",control=list(fnscale=-1),i=i,temp_tree=temp_tree)
+              logL <- logL + temp_ret$val
+              sigma2[i] <- temp_ret$par
+            } else
+            {
+              logL <- logL + f_diag(fixed_sigma2[i],i=i,temp_tree=temp_tree)
+              sigma2[i] <- fixed_sigma2[i]
+            }
+            
+          }
+          if(ret_sigma2 & is.na(fixed_sigma2[1])) return(sigma2) else if(ret_sigma2) return(log(fixed_sigma2))
+          if(is.na(logL)) -Inf else logL
+        }
+        if(is.na(fixed_model_pars[1]))
+        {
+          ret <- optim(starting.values.default,fn = f_diag_mod,method = "L-BFGS-B",lower = bounds.default[,1],upper = bounds.default[,2],control=list(fnscale=-1))          
+          pars <- ret$par
+          logL <- ret$val  
+        } else
+        {
+          pars <- fixed_model_pars
+          logL <- f_diag_mod(fixed_model_pars)
+          #fixed_model_pars[names(fixed_model_pars)!="rate"] <- log(fixed_model_pars[names(fixed_model_pars)!="rate"])
+          #pars <- fixed_model_pars
+        }
+        if(is.na(fixed_sigma2[1])) sigma2 <- exp(f_diag_mod(pars,TRUE)) else sigma2 <- fixed_sigma2
+        if(is.na(fixed_model_pars[1])) pars[names(pars)!="rate"] <- exp(pars[names(pars)!="rate"])
+      }
+    }
+  }
+  if(model[1]!="BM")
+  {
+    bounds.default[rownames(bounds.default)!="rate",] <- exp(bounds.default[rownames(bounds.default)!="rate",])
+    if(any(abs(pars-bounds.default[,1,drop=F])<1e-10))
+      warning(paste("the estimation of", names(pars)[abs(pars-bounds.default[,1])<1e-10], 'matches the lower bound for this parameter.'))
+    if(any(abs(pars-bounds.default[,2,drop=F])<1e-10))
+      warning(paste("the estimation of", names(pars)[abs(pars-bounds.default[,2])<1e-10], 'matches the upper bound for this parameter.'))
+    if(flag) logL <- logL + pars["alpha"] * 2*sum(D)
+    if(any(OU%in%model) & is.na(fixed_sigma2[1])) sigma2 <- 2*as.double(pars["alpha"])*sigma2
+    ret_val <- list(sigma2=sigma2,pars=pars,logL=logL,method=method)
+    logL <- ret_val$logL
+    sigma2 <- ret_val$sigma2
+  } else
+  {
+    ret_val <- list(sigma2=sigma2,logL=logL,method=method)
+  }
+  ret_val$model <- model
+  ret_val$D <- D
+  for(i in 1:length(rate.mult.args)) rate.mult.args[[i]] <- get(names(rate.mult.args)[i])
+  if(error!="none")
+  {
+    rate.mult.args$error <- "supply"
+    rate.mult.args$error_supply <- errs
+  }
+  ret_val$rate.mult.args <- rate.mult.args
+  class(ret_val) <- "rate.mult"
+  ret_val
+}
+
+est_BM <- function(Y,tree,type,method,nspecies,nvar,ones,anc,sigma2,SS,calc_sigma=TRUE,fixed_sigma2=NA)
+{
+  if(!is.na(fixed_sigma2[1])) calc_sigma <- TRUE
+  temp_tree <- tree
+  P <- Y[,1:nvar+1,drop=F]
+  for(i in 1:ceiling(nvar/50))
+  {
+    rng <- (1+((i-1)*50)):min(50+(i-1)*50,nvar)
+    temp <- three.point.compute(phy = temp_tree,P = P[,rng,drop=F])
+    anc[rng] <- solve(temp$vec11)%*%temp$P1
+  }
+  P <- Y[,1:nvar+1,drop=F] - (t(ones)%*%anc)
+  if(calc_sigma)
+  {
+    if(is.na(fixed_sigma2[1]))
+    {
+      for(i in 1:ceiling(nvar/50))
+      {
+        rng <- (1+((i-1)*50)):min(50+(i-1)*50,nvar)
+        temp <- three.point.compute(phy = temp_tree,P = P[,rng,drop=F])
+        sigma2[rng] <- if(length(temp$PP)==1) temp$PP else diag(temp$PP)
+      }
+      if(type=="mult")
+      {
+        sigma2 <- sum(sigma2)
+      }
+      if(method=="ML")
+      {
+        sigma2 <- sigma2 / nspecies
+      } else if(method=="REML")
+      {
+        sigma2 <- sigma2 / (nspecies-1)
+      }
+    } else sigma2 <- fixed_sigma2
+  }
+  if(type=="mult")
+  {
+    if(calc_sigma) 
+    { 
+      if(is.na(fixed_sigma2[1])) sigma2 <- sigma2 / nvar
+      temp_tree$edge.length <- tree$edge.length*sigma2
+    }
+    for(i in 1:ceiling(nvar/50))
+    {
+      rng <- (1+((i-1)*50)):min(50+(i-1)*50,nvar)
+      temp <- three.point.compute(phy = temp_tree,P = P[,rng,drop=F])
+      SS[rng] <- if(length(temp$PP)==1) temp$PP else diag(temp$PP)
+    }
+    logL <- -.5*(sum(SS) + nvar*(nspecies - if(method=="REML") 1 else 0)*log(2*pi) + nvar*(temp$logd + if(method=="REML") log(temp$vec11) else 0))
+  } else if(type=="diag")
+  {
+    logL <- numeric(nvar)
+    for(i in 1:nvar)
+    {
+      if(calc_sigma) temp_tree$edge.length <- tree$edge.length*sigma2[i]
+      temp <- three.point.compute(phy = temp_tree,P = P[,i,drop=F])
+      SS <- temp$PP
+      nvar <- 1
+      logL[i] <- -.5*(sum(SS) + nvar*(nspecies - if(method=="REML") 1 else 0)*log(2*pi) + nvar*(temp$logd + if(method=="REML") log(temp$vec11) else 0))
+    }
+    logL <- sum(logL)
+  } else if(type=="all") return(est_all(tree,Y,method))
+  list(sigma2=sigma2,logL=logL,method=method)
+}
+
+est_all <- function(tree,Y,method,estimate_logl=TRUE)
+{
+  nvar <- ncol(Y) - 1
+  tr <- multi2di(tree)
+  anc <- (matrix(1,nrow(Y),1)%*%apply(Y[,1:nvar+1,drop=F],2,function(X) ace(x = setNames(X,Y$species),phy=tr,method="pic")$ace[1]))[1,]
+  
+  #temp <- three.point.compute(phy = tree,P = data.frame(Y[,1:nvar+1,drop=F],row.names = Y[,1]))
+  #anc <- solve(temp$vec11)%*%temp$P1
+  nspecies <- length(tree$tip.label)
+  ones <- cbind(setNames(rep(1,nspecies),tree$tip.label))
+  P <- Y[,1:nvar+1,drop=F] - (ones%*%anc)
+  SS <- three.point.compute(phy = tree,P = P)$PP
+  sigma2 <- SS / (nspecies - (as.integer(method=="REML")))
+  if(estimate_logl)
+  {
+    SS <- t(unlist(P)) %*% solve(sigma2 %x% vcv(tree)) %*% unlist(P) # INEFFICIENT -- implement tree transversal function
+    logL <- -.5*(SS + (as.double(determinant(sigma2,logarithm = TRUE)$modulus)*nspecies + nvar*three.point.compute(tree,ones)$logd) + (nspecies - (as.integer(method=="REML")))*log(2*pi))
+    list(sigma2=sigma2,logL=logL,method=method)
+  } else
+    list(sigma2=sigma2,logL=NA,method=method)
+}
+
+compare.rate.mult <- function(rate.mult.fitted,groups,fit_individual=FALSE)
+{
+  full_tree <- rate.mult.fitted$rate.mult.args$tree
+  ngroups <- nlevels(groups)
+  group_levels <- levels(groups)
+  rmf <- rate.mult.fitted$rate.mult.args
+  rate.mult.args <- rep(list(rmf),ngroups)
+  
+  alt_model <- null_model <- vector("list",length = ngroups)
+  names(rate.mult.args) <- names(alt_model) <- names(null_model) <- group_levels
+  alt.logL <- null.logL <- 0
+  
+  if(fit_individual | (rate.mult.fitted$model[1]=="BM"))
+  {
+    for(i in 1:ngroups)
+    {
+      keep_taxa <- names(groups)[which(groups==group_levels[i])]
+      drop_taxa <- name.check(phy = full_tree,data.names = keep_taxa)$tree_not_data
+      rate.mult.args[[i]]$tree <- drop.tip(full_tree,tip = drop_taxa)
+      rate.mult.args[[i]]$Y <- rate.mult.args[[i]]$Y[keep_taxa,]
+      if(rate.mult.args[[i]]$error=="supply") rate.mult.args[[i]]$error_supply <- rate.mult.args[[i]]$error_supply[keep_taxa,]
+      alt_model[[i]] <- do.call(rate.mult,rate.mult.args[[i]])
+      rate.mult.args[[i]]$fixed_sigma2 <- rate.mult.fitted$sigma2
+      if(rate.mult.fitted$model[1]!="BM") rate.mult.args[[i]]$fixed_model_pars <- rate.mult.fitted$pars
+      null_model[[i]] <- do.call(rate.mult,rate.mult.args[[i]])
+      null.logL <- null.logL + null_model[[i]]$logL
+      alt.logL <- alt.logL + alt_model[[i]]$logL
+    }
+  } else
+  {
+    for(i in 1:ngroups)
+    {
+      keep_taxa <- names(groups)[which(groups==group_levels[i])]
+      drop_taxa <- name.check(phy = full_tree,data.names = keep_taxa)$tree_not_data
+      rate.mult.args[[i]]$tree <- drop.tip(full_tree,tip = drop_taxa)
+      rate.mult.args[[i]]$Y <- rate.mult.args[[i]]$Y[keep_taxa,]
+      rate.mult.args[[i]]$fixed_model_pars <- rate.mult.fitted$pars
+      if(rate.mult.args[[i]]$error=="supply") rate.mult.args[[i]]$error_supply <- rate.mult.args[[i]]$error_supply[keep_taxa,]
+      alt_model[[i]] <- do.call(rate.mult,rate.mult.args[[i]])
+      rate.mult.args[[i]]$fixed_sigma2 <- rate.mult.fitted$sigma2
+      null_model[[i]] <- do.call(rate.mult,rate.mult.args[[i]])
+      null.logL <- null.logL + null_model[[i]]$logL
+      alt.logL <- alt.logL + alt_model[[i]]$logL
+    }
+  }
+  null.pars <- length(rate.mult.fitted$sigma2)
+  alt.pars <- null.pars*ngroups
+  if(rate.mult.fitted$model[1]!="BM")
+  {
+    null.pars <- null.pars + length(rate.mult.fitted$pars)
+    if(fit_individual)
+    {
+      alt.pars <- alt.pars + (length(rate.mult.fitted$pars)*ngroups)
+    } else alt.pars <- alt.pars + length(rate.mult.fitted$pars)
+  }
+  df <- as.integer(alt.pars-null.pars)
+  chi_sq=-2*null.logL+2*alt.logL
+  p <- pchisq(chi_sq,df = as.integer(alt.pars - null.pars),lower.tail = FALSE)
+  return(list(null.logL=null.logL,null.pars=as.integer(null.pars),alt.logL=alt.logL,alt.pars=as.integer(alt.pars),df=df,chi_sq=chi_sq,p=p,null_model_list=null_model,alt_model_list=alt_model))
+}
+
+compare.multivar.rate.mult <- function(null_model,alt_model_list)
+{
+  ntraits <- length(alt_model_list)
+  alt.logL <- 0
+  alt.pars <- 0
+  for(i in 1:ntraits)
+  {
+    alt.logL <- alt.logL + alt_model_list[[i]]$logL
+    alt.pars <- alt.pars + length(alt_model_list[[i]]$sigma2)
+    if(alt_model_list[[i]]$rate.mult.args$model[1]!="BM") alt.pars <- alt.pars + length(alt_model_list[[i]]$pars)
+  }
+  null.logL <- null_model$logL
+  null.pars <- length(null_model$sigma2)
+  if(null_model$rate.mult.args$model[1]!="BM") null.pars <- null.pars + length(null_model$pars)
+  df <- as.integer(alt.pars-null.pars)
+  chi_sq=-2*null.logL+2*alt.logL
+  p <- pchisq(chi_sq,df = as.integer(alt.pars - null.pars),lower.tail = FALSE)
+  return(list(null.logL=null.logL,null.pars=as.integer(null.pars),alt.logL=alt.logL,alt.pars=as.integer(alt.pars),df=df,chi_sq=chi_sq,p=p))
+}
+
+K.mult <- function(rate.mult.fitted,iter=1000)
+{
+  tree <- reorder(rate.mult.fitted$rate.mult.args$tree,"pruningwise")
+  nspecies <- length(tree$tip.label)
+  nvar <- ncol(rate.mult.fitted$rate.mult.args$Y) - 1
+  if(any(is.na(rate.mult.fitted$rate.mult.args$Y))) missing_data <- TRUE else missing_data <- FALSE
+  if(rate.mult.fitted$rate.mult.args$error!="none")
+  {
+    error <- TRUE
+    errs <- rate.mult.fitted$rate.mult.args$error_supply
+  } else error <- FALSE
+  D <- numeric(nspecies)
+  if(rate.mult.fitted$rate.mult.args$model[1]=="BM") BM <- TRUE else
+  {
+    BM <- FALSE
+    model <- rate.mult.fitted$rate.mult.args$model
+    pars <- rate.mult.fitted$pars
+    if("alpha" %in% names(pars) & !is.ultrametric(tree))
+    {
+      D <- rate.mult.fitted$rate.mult.args$D
+      rate.mult.fitted$rate.mult.args$Y[,1:nvar+1] <- exp(-pars["alpha"]*rate.mult.fitted$rate.mult.args$D) * rate.mult.fitted$rate.mult.args$Y[,1:nvar+1]
+    }
+    for(j in 1:length(model))
+    {
+      temp_tree <- transf.branch.lengths(phy = tree,model = model[j],parameters = as.list(pars[j]),check.ultrametric = FALSE,D = D,check.names = FALSE)$tree
+    }
+  }
+  Y <- rate.mult.fitted$rate.mult.args$Y
+  Y <- Y[tree$tip.label,]
+  type <- rate.mult.fitted$rate.mult.args$type
+  sigma2 <- rate.mult.fitted$sigma2
+  
+  K.mult_f <- function(Y)
+  {
+    K.num.sum <- 0
+    K.denom.sum <- 0
+    for(i in 1:nvar)
+    {
+      temp_sigma2 <- if(type=="mult") sigma2 else sigma2[i]
+      temp_tree <- tree
+      temp_dist_from_root <- dist_from_root
+      if(!BM)
+      { 
+        if(any("alpha"==names(pars)))
+        {
+          temp_tree$edge.length <- temp_tree$edge.length / 2 / pars[which(names(pars)=="alpha")]
+          temp_dist_from_root <- temp_dist_from_root / 2 / pars[which(names(pars)=="alpha")]
+          tp_prep[[7]] <- temp_tree$root.edge * temp_sigma2
+        }
+      }
+      temp_tree$edge.length <- temp_tree$edge.length * temp_sigma2
+      temp_dist_from_root <- temp_dist_from_root * temp_sigma2
+      temp_nspecies <- nspecies
+      if(error)
+      {
+        temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] <- temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] + errs[temp_tree$edge[temp_tree$edge[,2]<=temp_nspecies,2],i,drop=F]
+        temp_dist_from_root <- temp_dist_from_root + errs[temp_tree$edge[temp_tree$edge[,2]<=temp_nspecies,2],i,drop=F]
+      }
+      temp_Y <- Y[,i+1,drop=F]
+      temp_ones <- ones
+      if(missing_data)
+      {
+        keep <- which(!is.na(temp_Y))
+        temp_tree <- reorder(drop.tip(tree,tip = as.character(Y[-keep,1])),"pruningwise")
+        temp_nspecies <- length(keep)
+        temp_Y <- temp_Y[keep,,drop=F]
+        temp_ones <- temp_ones[keep]
+        temp_dist_from_root <- temp_dist_from_root[keep]
+      }
+      if(nspecies!=temp_nspecies)
+      {
+        tp_prep <- threepoint_prepare(temp_tree,temp_Y)
+        x_span <- (temp_nspecies+1):length(tp_prep[[11]])
+      }
+      temp_dist_from_root <- sum(temp_dist_from_root)
+      temp_Y <- temp_Y[,1]
+      tp_prep[[11]][x_span] <- temp_Y
+      tp_prep[[8]] <- as.double(temp_tree$edge.length)
+      tp <- do.call(threepoint_direct,tp_prep)
+      K.denom <- (temp_dist_from_root - (temp_nspecies / tp$vec11))/(temp_nspecies - 1)
+      a.obs <- t(tp$P1/tp$vec11)
+      x_a <- temp_Y - temp_ones %*% a.obs
+      
+      tp_prep[[11]][x_span] <- as.double(x_a)
+      tp <- do.call(threepoint_direct,tp_prep)
+      K.denom <- tp$PP * K.denom
+      K.num <- sum(x_a^2)
+      K.num.sum <- K.num.sum + K.num
+      K.denom.sum <- K.denom.sum + K.denom
+    }
+    return(K.num.sum/K.denom.sum)
+  }
+  
+  dist_from_root <- pruningwise.distFromRoot(reorder(tree,"pruningwise"))[1:nspecies]
+  tp_prep <- threepoint_prepare(tree,Y[,2,drop=F])
+  ones <- rep(1,nspecies)
+  
+  tp_prep <- threepoint_prepare(tree,Y[,2,drop=F])
+  x_span <- (nspecies+1):length(tp_prep[[11]])
+  K.obs <- K.mult_f(Y)
+  P.val <- 1
+  K.val <- rep(0, iter)
   for (i in 1:iter) {
-    if (RRPP == TRUE) {
-      SS.ran <- geomorph_SS.pgls.random(Y, Xs, SS = SS.obs, Pcor, 
-                               Yalt = "RRPP")
+    rand_Y <- Y[sample(nrow(Y)), ]
+    rownames(rand_Y) <- rand_Y[,1] <- rownames(Y)
+    K.rand <- K.mult_f(rand_Y)
+    P.val <- ifelse(K.rand >= K.obs, P.val + 1, P.val)
+    K.val[i] <- K.rand
+  }
+  P.val <- P.val/(iter + 1)
+  K.val[iter + 1] = K.obs
+  return(list(phy.signal = K.obs, pvalue = P.val))
+}
+
+pgls.mult <- function(rate.mult.fitted,X)
+{
+  tree <- reorder(rate.mult.fitted$rate.mult.args$tree,"pruningwise")
+  nspecies <- length(tree$tip.label)
+  type <- rate.mult.fitted$rate.mult.args$type
+  sigma2 <- rate.mult.fitted$sigma2
+  
+  if(class(X)=="data.frame") X <- as.matrix(X)
+  if(length(X)==nspecies | !is.matrix(X))
+  {
+    X <- X[tree$tip.label,]
+    X <- matrix(cbind(1,as.matrix(X)),ncol = 2,dimnames=list(tree$tip.label,c("Intercept","X")))
+  } else
+  {
+    X <- X[tree$tip.label,]
+    X <- cbind(Intercept=1,X)
+  }
+  
+  nvar <- ncol(rate.mult.fitted$rate.mult.args$Y) - 1
+  if(any(is.na(rate.mult.fitted$rate.mult.args$Y))) missing_data <- TRUE else missing_data <- FALSE
+  if(rate.mult.fitted$rate.mult.args$error!="none")
+  {
+    error <- TRUE
+    errs <- rate.mult.fitted$rate.mult.args$error_supply
+  } else error <- FALSE
+  D <- numeric(nspecies)
+  if(rate.mult.fitted$rate.mult.args$model[1]=="BM") BM <- TRUE else
+  {
+    BM <- FALSE
+    model <- rate.mult.fitted$rate.mult.args$model
+    pars <- rate.mult.fitted$pars
+    if("alpha" %in% names(pars) & !is.ultrametric(tree))
+    {
+      D <- rate.mult.fitted$rate.mult.args$D
+      rate.mult.fitted$rate.mult.args$Y[,1:nvar+1] <- exp(-pars["alpha"]*rate.mult.fitted$rate.mult.args$D) * rate.mult.fitted$rate.mult.args$Y[,1:nvar+1]
     }
-    else SS.ran <- geomorph_SS.pgls.random(Y, Xs, Pcor, SS = SS.obs, 
-                                  Yalt = "resample")
-    SS.r <- SS.ran$SS
-    Yr <- SS.ran$Y
-    SSE.r <- SS.ran$SSE
-    Fs.r <- (SS.r/df)/(SSE.r/dfE)
-    P[, , i + 1] <- Fs.r
+    for(j in 1:length(model))
+    {
+      temp_tree <- transf.branch.lengths(phy = tree,model = model[j],parameters = as.list(pars[j]),check.ultrametric = FALSE,D = D,check.names = FALSE)$tree
+    }
   }
-  P.val <- geomorph_Pval.matrix(P)
-  Z <- geomorph_Effect.size.matrix(P)
-  anova.tab <- data.frame(anova.tab, Z = c(Z, NA, NA), P.value = c(P.val, 
-                                                                   NA, NA))
-  anova.title = "\nRandomization of Raw Values used\n"
-  attr(anova.tab, "heading") <- paste("\nType I (Sequential) Sums of Squares and Cross-products\n", 
-                                      anova.title)
-  class(anova.tab) <- c("anova", class(anova.tab))
-  if (verbose == TRUE) {
-    list(anova.table = anova.tab, call = match.call(), SS.rand = P)
+  
+  Y <- rate.mult.fitted$rate.mult.args$Y
+  tp_prep <- threepoint_prepare(tree,X,Y[,2,drop=F])
+  x_span <- (nspecies+1):length(tp_prep[[11]])
+  y_span <- (nspecies+1):length(tp_prep[[12]])
+  ones <- rep(1,nspecies)
+  k <- ncol(X)
+  rdf <- nspecies - k
+  SS_total <- SS_reg <- SS_res <- SS_res1 <- 0
+  SSEs <- numeric(k)
+  for(i in 1:nvar)
+  {
+    temp_nspecies <- nspecies
+    temp_sigma2 <- if(type=="mult") sigma2 else sigma2[i]
+    temp_tree <- tree
+    if(!BM)
+    { 
+      if(any("alpha"==names(pars)))
+      {
+        temp_tree$edge.length <- temp_tree$edge.length / 2 / pars[which(names(pars)=="alpha")]
+        tp_prep[[7]] <- temp_tree$root.edge * temp_sigma2
+      }
+    }
+    temp_tree$edge.length <- temp_tree$edge.length * temp_sigma2 / temp_sigma2
+    temp_nspecies <- nspecies
+    if(error)
+    {
+      temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] <- temp_tree$edge.length[temp_tree$edge[,2]<=temp_nspecies] + errs[temp_tree$edge[temp_tree$edge[,2]<=temp_nspecies,2],i,drop=F]
+    }
+    temp_Y <- Y[,i+1,drop=F]
+    temp_X <- X
+    temp_ones <- ones
+    if(missing_data)
+    {
+      keep <- which(!is.na(temp_Y))
+      temp_tree <- reorder(drop.tip(tree,tip = as.character(Y[-keep,1])),"pruningwise")
+      temp_nspecies <- length(keep)
+      temp_Y <- temp_Y[keep,,drop=F]
+      temp_X <- X[keep,,drop=F]
+      temp_ones <- temp_ones[keep]
+    }
+    if(nspecies!=temp_nspecies)
+    {
+      tp_prep <- threepoint_prepare(temp_tree,temp_X,temp_Y)
+      x_span <- (temp_nspecies+1):length(tp_prep[[11]])
+      y_span <- (temp_nspecies+1):length(tp_prep[[12]])
+    }
+    temp_Y <- temp_Y[,1]
+    tp_prep[[11]][x_span] <- temp_X
+    tp_prep[[12]][y_span] <- temp_Y
+    tp_prep[[8]] <- as.double(temp_tree$edge.length)
+    tp <- do.call(threepoint_direct,tp_prep)
+    
+    a.obs <- t(tp$Q1/tp$vec11)
+    temp_beta <- solve(tp$PP)%*%tp$QP
+    
+    y_ones_diff <- temp_Y - temp_ones %*% a.obs
+    tp_prep[[12]][y_span] <- as.double(y_ones_diff)
+    tp <- do.call(threepoint_direct,tp_prep)
+    SS_total <- SS_total + tp$QQ
+    
+    y_hat_diff <- temp_Y - temp_X%*% temp_beta
+    tp_prep[[12]][y_span] <- as.double(y_hat_diff)
+    tp <- do.call(threepoint_direct,tp_prep)
+    SS_res <- SS_res + tp$QQ
+    
+    for(j in 2:k)
+    {
+      y_hat_diff <- temp_Y - temp_X[,c(1:j)]%*%temp_beta[c(1:j)]
+      tp_prep[[12]][y_span] <- as.double(y_hat_diff)
+      tp <- do.call(threepoint_direct,tp_prep)
+      SSEs[j] <- SSEs[j] + tp$QQ
+    }
+    
+    SS_reg <- SS_total - SS_res
+    var <- SS_reg / (temp_nspecies - 1)
   }
-  else anova.tab
-}
-
-geomorph_mod.mats <- function (mod.mf, keep.order = FALSE) 
-{
-  Terms <- terms(mod.mf, keep.order = keep.order)
-  k <- length(attr(Terms, "term.labels"))
-  Y <- as.matrix(mod.mf[1])
-  Xs <- as.list(array(0, k + 1))
-  Xs[[1]] <- matrix(1, nrow(Y))
-  for (i in 1:k) {
-    Xs[[i + 1]] <- model.matrix(Terms[1:i], data = mod.mf)
-  }
-  list(Xs = Xs, terms = attr(Terms, "term.labels"))
-}
-
-geomorph_anova.pgls.parts <- function (f1, X = NULL, Pcor, Yalt = c("observed", "resample", 
-                                                                      "RRPP"), keep.order = FALSE) 
-{
-  form.in <- formula(f1)
-  Yalt = match.arg(Yalt)
-  Terms <- terms(form.in, keep.order = keep.order)
-  mf <- model.frame(Terms)
-  Y <- eval(form.in[[2]], parent.frame())
-  if (is.null(X)) {
-    Xs <- geomorph_mod.mats(mf, keep.order = keep.order)
-  }
-  else {
-    Xs = X
-  }
-  anova.terms <- Xs$terms
-  k <- length(Xs$Xs) - 1
-  df <- SSEs <- array(0, k + 1)
-  df[1] <- 1
-  SSY <- SSEs[1] <- geomorph_SSE(lm(Pcor %*% Y ~ Pcor %*% matrix(1, 
-                                                        nrow(Y)) - 1))
-  for (i in 1:k) {
-    x <- Xs$Xs[[i + 1]]
-    Px <- Pcor %*% x
-    df[i + 1] <- qr(x)$rank
-    SSEs[i + 1] <- geomorph_SSE(lm(Pcor %*% Y ~ Px - 1))
-  }
-  SS.tmp <- c(SSEs[-1], SSEs[k + 1])
-  SS <- (SSEs - SS.tmp)[1:(k)]
-  SS <- c(SS, SSY - sum(SS), SSY)
-  if (Yalt == "observed") 
-    SS <- SS[1:k]
-  if (Yalt == "resample") 
-    SS <- geomorph_SS.pgls.random(Y, Xs, Pcor, SS, Yalt = "resample")$SS
-  if (Yalt == "RRPP") 
-    SS <- geomorph_SS.pgls.random(Y, Xs, Pcor, SS, Yalt = "RRPP")$SS
-  df.tmp <- c(df[-1], df[k + 1])
-  df <- (df.tmp - df)[1:k]
+  SSEs[1] <- SS_total
+  SS.tmp <- c(SSEs[-1],SSEs[k])
+  df <- 1:k
+  df.tmp <- c(df[-1],df[k])
+  df <- (df.tmp - df)[1:(k-1)]
+  SS <- (SSEs - SS.tmp)[1:(k-1)]
+  
   MS <- SS/df
-  R2 <- SS/SSY
-  SSE.model <- SSY - sum(SS)
-  dfE <- nrow(Y) - (sum(df) + 1)
+  R2 <- SS/SS_total
+  SSE.model <- SS_total - sum(SS)
+  dfE <- nrow(Y)-(sum(df)+1)
   MSE <- SSE.model/dfE
   Fs <- MS/MSE
-  df <- c(df, dfE, nrow(Y) - 1)
-  SS <- c(SS, SSE.model, SSY)
-  MS <- c(MS, MSE, NA)
-  R2 <- c(R2, NA, NA)
-  Fs <- c(Fs, NA, NA)
-  a.tab <- data.frame(df, SS, MS, Rsq = R2, F = Fs)
-  rownames(a.tab) <- c(anova.terms, "Residuals", "Total")
-  list(table = a.tab, B = coef(lm(Y ~ x - 1)), SS = SS, df = df, 
-       R2 = R2, F = Fs, Y = Y)
+  df <- c(df,dfE,nrow(Y)-1)
+  SS <- c(SS,SSE.model, SS_total)
+  MS <- c(MS,MSE,NA)
+  R2 <- c(R2,NA,NA)
+  Fs <- c(Fs,NA,NA)
+  ps <- as.double(pf(Fs, k - 1, rdf, lower.tail = FALSE))
+  
+  R2_all <- SS_reg / SS_total
+  R2adj <- 1 - (1 - R2_all) * (nspecies - 1)/(rdf)
+  Fstat <- rdf / (k-1)*R2_all/(1-R2_all)
+  pval <- as.double(pf(Fstat, k - 1, rdf, lower.tail = FALSE))
+  
+  df <- c(df,NA,sum(df[1:(k-1)]))
+  SS <- c(SS,NA,SS_reg)
+  MS <- c(MS,NA,SS_reg/rdf)
+  R2 <- c(R2,NA,R2_all)
+  Fs <- c(Fs,NA,Fstat)
+  ps <- c(ps,NA,pval)
+  
+  a.tab <- data.frame(df=df,SS=SS,MS=MS,Rsq=R2,F=Fs,P.value = ps)
+  rownames(a.tab)[1:(k-1)] <- colnames(X)[2:k]
+  rownames(a.tab)[k:(k+1)] <- c("Residuals","Total")
+  rownames(a.tab)[(k+2):(k+3)] <- c("-----","Model")
+  colnames(a.tab) <- c("df","SS","MS","Rsq","F","P.value")
+  class(a.tab) <- c("anova", class(a.tab))
+  attr(a.tab, "heading") <- paste("\nType I (Sequential) Sums of Squares and Cross-products\n","\nAnalysis of Variance Table\n")
+  
+  
+  a.tab
 }
 
-geomorph_SS.pgls.random <- function (Y, Xs, SS, Pcor, Yalt = c("resample", "RRPP")) 
+print.rate.mult <- function(x,...)
 {
-  k <- length(SS)
-  Pcor = as.matrix(Pcor)
-  SSEs.null <- SSEs.resample <- SSEs.rrpp <- numeric(k)
-  PXs <- Xs$Xs
-  for (i in 1:(k + 1)) PXs[[i]] = Pcor %*% Xs$Xs[[i]]
-  if (Yalt == "RRPP") {
-    pseudoY <- PY <- geomorph_RRP.submodels(Xs$Xs, Y)
-    for (i in 1:k) {
-      PY[, , i] = Pcor %*% pseudoY[, , i]
-      SSEs.null[i] <- geomorph_SSE(lm(PY[, , i] ~ PXs[[i]] - 1))
-      SSEs.rrpp[i] <- geomorph_SSE(lm(PY[, , i] ~ PXs[[i + 1]] - 
-                               1))
-    }
-    SS.r <- SSEs.null - SSEs.rrpp
-    Y <- solve(Pcor) %*% as.matrix(PY[, , k + 1])
-    SSE.r <- SSEs.rrpp[k]
-  }
-  if (Yalt == "resample") {
-    Yr <- Y[sample(nrow(Y)), ]
-    PYr <- Pcor %*% Yr
-    for (i in 1:k) {
-      SSEs.null[i] <- geomorph_SSE(lm(PYr ~ PXs[[i]] - 1))
-      SSEs.resample[i] <- geomorph_SSE(lm(PYr ~ PXs[[i + 1]] - 1))
-    }
-    SS.r <- SSEs.null - SSEs.resample
-    Y <- solve(Pcor) %*% PYr
-    SSE.r <- SSEs.resample[k]
-  }
-  list(SS = SS.r, Y = Y, SSE = SSE.r)
-}
-
-geomorph_Pval.matrix <- function (M) 
-{
-  P = matrix(0, dim(M)[1], dim(M)[2])
-  for (i in 1:dim(M)[1]) {
-    for (j in 1:dim(M)[2]) {
-      y = M[i, j, ]
-      p = geomorph_pval(y)
-      P[i, j] = p
-    }
-  }
-  if (dim(M)[1] > 1 && dim(M)[2] > 1) 
-    diag(P) = 1
-  rownames(P) = dimnames(M)[[1]]
-  colnames(P) = dimnames(M)[[2]]
-  P
-}
-
-geomorph_Effect.size.matrix <- function (M, center = F) 
-{
-  Z = matrix(0, dim(M)[1], dim(M)[2])
-  for (i in 1:dim(M)[1]) {
-    for (j in 1:dim(M)[2]) {
-      y = M[i, j, ]
-      n = length(y)
-      z = geomorph_effect.size(y, center = center) * sqrt((n - 1)/n)
-      Z[i, j] = z
-    }
-  }
-  Z
-}
-
-geomorph_effect.size <- function (x, center = FALSE) 
-{
-  z = scale(x, center = center)
-  z[1]
-}
-
-geomorph_SSE <- function (L) 
-{
-  r <- as.matrix(resid(L))
-  S <- r %*% t(r)
-  sse <- sum(diag(S))
-  sse
-}
-
-geomorph_pval <- function(s)
-{
-  p = length(s)
-  r = rank(s)[1] - 1
-  pv = 1 - r/p
-  pv
-}
-
-geomorph_RRP.submodels <- function (Xs, Y) 
-{
-  p <- ncol(Y)
-  n <- nrow(Y)
-  k <- length(Xs)
-  E <- Yh <- array(0, c(n, p, k))
-  for (i in 1:k) {
-    yhat <- lm(Y ~ Xs[[i]] - 1)$fitted
-    Yh[, , i] <- yhat
-    E[, , i] <- Y - yhat
-  }
-  Er <- E[sample(nrow(E)), , ]
-  if (p == 1) 
-    Er <- array(Er, c(n, p, k))
-  Yr <- Yh + Er
-}
-
-geomorph_two.d.array <- function (A) 
-{
-  pxk <- dim(A)[1] * dim(A)[2]
-  n <- dim(A)[3]
-  tmp <- aperm(A, c(3, 2, 1))
-  dim(tmp) <- c(n, pxk)
-  rownames(tmp) <- dimnames(A)[[3]]
-  return(tmp)
+  cat("\nEvolutionary rate(s):\n")
+  cat(x$sigma2)
+  cat("\n\nLog-likelihood: ",x$logL,"\n")
+  cat("Method: ",x$method,"\n")
+  cat("\nEvolutionary model: ")
+  if(x$model[1]!="BM")
+  {
+    cat("\n")
+    print(data.frame(Parameter=names(x$pars),Value=x$pars,row.names = x$model))
+  } else cat("BM")
+  cat("\n")
 }

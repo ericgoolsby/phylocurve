@@ -4,7 +4,7 @@
 Estimate regression coefficients for tip species curves
 }
 \description{
-Estiamtes regression coefficients for tip species curves from raw data. May be useful if wanting to perform methdos without first performing ancestral curve reconstruction via the phylocurve() function.
+Estiamtes regression coefficients for tip species curves from raw data. May be useful if wanting to perform methods without first performing ancestral curve reconstruction via the phylocurve() function.
 }
 \usage{
 get_tip_coefficients(formula, tree, data, ymin = 0.01, ymax = 0.99,
@@ -44,17 +44,15 @@ Estimated regression coefficients of tip curves.
 require(phytools)
 
 # simulate evolution of a function-valued trait (glm with logit link)
-sim_data <- simcurves()
+sim_data <- sim.curves()
 
+# get tip coefficients and aligned function data
 tip_coefficients <- get_tip_coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
+data <- get_aligned_function_data(tip_coefficients)
 
-# ancestral curve reconstruction
-anc_recon <- phylocurve(tree = sim_data$tree,tip_coefficients = tip_coefficients)
+# estimate evolutionary rates
+rate.mult.fitted <- rate.mult(sim_data$tree,data)
 
 # estimate phylogenetic signal
-phylocurve.signal(tip_coefficients = tip_coefficients,tree = sim_data$tree)
-
-# assess correlated trait evolution with a univariate trait
-X <- fastBM(sim_data$tree)
-phylocurve.pgls(tip_coefficients = tip_coefficients,univariate_trait = X,tree = sim_data$tree)
+K.mult(rate.mult.fitted = rate.mult.fitted)
 }

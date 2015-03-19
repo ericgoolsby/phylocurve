@@ -1,0 +1,11 @@
+citHeader("To cite package 'phylocurve' in publications use:")
+citEntry(entry = "Article",
+author = personList(as.person("Eric W. Goolsby")),
+title = "Phylogenetic comparative methods for evaluating the evolutionary history of function-valued traits",
+year = 2015,
+journal = "Systematic Biology",
+volume = "",
+pages = "",
+textVersion = paste("Goolsby, E.W. (2015)",
+"Phylogenetic comparative methods for evaluating the evolutionary history of function-valued traits",
+"Systematic Biology, In press."))
