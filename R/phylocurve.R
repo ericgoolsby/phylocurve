@@ -935,7 +935,9 @@ compare.rate.mult <- function(rate.mult.fitted,groups,fit_individual=FALSE)
   df <- as.integer(alt.pars-null.pars)
   chi_sq=-2*null.logL+2*alt.logL
   p <- pchisq(chi_sq,df = as.integer(alt.pars - null.pars),lower.tail = FALSE)
-  return(list(null.logL=null.logL,null.pars=as.integer(null.pars),alt.logL=alt.logL,alt.pars=as.integer(alt.pars),df=df,chi_sq=chi_sq,p=p,null_model_list=null_model,alt_model_list=alt_model))
+  ret <- list(null.logL=null.logL,null.pars=as.integer(null.pars),alt.logL=alt.logL,alt.pars=as.integer(alt.pars),df=df,chi_sq=chi_sq,p=p,method=rate.mult.fitted$method,null_model_list=null_model,alt_model_list=alt_model)
+  class(ret) <- "lr.test"
+  ret
 }
 
 compare.multivar.rate.mult <- function(null_model,alt_model_list)
@@ -955,7 +957,9 @@ compare.multivar.rate.mult <- function(null_model,alt_model_list)
   df <- as.integer(alt.pars-null.pars)
   chi_sq=-2*null.logL+2*alt.logL
   p <- pchisq(chi_sq,df = as.integer(alt.pars - null.pars),lower.tail = FALSE)
-  return(list(null.logL=null.logL,null.pars=as.integer(null.pars),alt.logL=alt.logL,alt.pars=as.integer(alt.pars),df=df,chi_sq=chi_sq,p=p))
+  ret <- list(null.logL=null.logL,null.pars=as.integer(null.pars),alt.logL=alt.logL,alt.pars=as.integer(alt.pars),df=df,chi_sq=chi_sq,p=p,method=null_model$method)
+  class(ret) <- "lr.test"
+  ret
 }
 
 K.mult <- function(rate.mult.fitted,iter=1000)
@@ -1247,4 +1251,21 @@ print.rate.mult <- function(x,...)
     print(data.frame(Parameter=names(x$pars),Value=x$pars,row.names = x$model))
   } else cat("BM")
   cat("\n")
+}
+
+print.lr.test <- function(x,...)
+{
+  cat("Null model:\n")
+  cat("\t",if(x$method=="REML") "Restricted log-" else "Log-") 
+      cat("likelihood = ",x$null.logL)
+  cat("\t","Number of parameters = ",x$null.pars)
+  
+  cat("\nAlternative model:\n")
+  cat("\t",if(x$method=="REML") "Restricted log-" else "Log-") 
+  cat("likelihood = ",x$alt.logL)
+  cat("\t","Number of parameters = ",x$alt.pars)
+  
+  cat("\n\nDegrees of freedom = ",x$df) 
+  cat("\nChi-square value = ",x$chi_sq)
+  cat("\np-value = ",x$p)
 }

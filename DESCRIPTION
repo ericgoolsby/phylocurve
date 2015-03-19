@@ -1,7 +1,7 @@
 Package: phylocurve
 Type: Package
 Title: Phylogenetic comparative methods for function-valued and other high-dimensional traits
-Version: 1.0.0
+Version: 1.0.1
 Date: 2015-03-18
 Author: Eric W. Goolsby
 Maintainer: Eric W. Goolsby <eric.goolsby.evolution@gmail.com>
