@@ -59,8 +59,6 @@ Ho, L. S. T. and Ane, C. 2014. "A linear-time algorithm for Gaussian and non-Gau
 Eric W. Goolsby
 }
 \examples{
-require(phytools)
-
 # simulate evolution of a function-valued trait (glm with logit link)
 sim_data <- sim.curves()
 
@@ -73,7 +71,4 @@ data <- get_aligned_function_data(tip_coefficients)
 
 # estimate evolutionary rates
 rate.mult.fitted <- rate.mult(sim_data$tree,data)
-
-# estimate phylogenetic signal
-K.mult(rate.mult.fitted = rate.mult.fitted)
 }

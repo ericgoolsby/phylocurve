@@ -35,8 +35,6 @@ Optional seed to set for reproducibility
 Pagel, M. 1999. "Inferring the historical patterns of biological evolution". Nature 401:877-884.
 }
 \examples{
-require(phytools)
-
 # simulate evolution of a function-valued trait (glm with logit link)
 sim_data <- sim.curves()
 
@@ -49,7 +47,4 @@ data <- get_aligned_function_data(tip_coefficients)
 
 # estimate evolutionary rates
 rate.mult.fitted <- rate.mult(sim_data$tree,data)
-
-# estimate phylogenetic signal
-K.mult(rate.mult.fitted = rate.mult.fitted)
 }

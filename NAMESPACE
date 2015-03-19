@@ -17,3 +17,6 @@ export(compare.multivar.rate.mult,
        print.lr.test,
        print.rate.mult
        )
+
+S3method(print, rate.mult)
+S3method(print, lr.test)
