@@ -1,10 +1,10 @@
 \name{phylocurve}
 \alias{phylocurve}
 \title{
-Ancestral curve reconstruction
+Ancestral curve reconstruction for logistic regression (glm with logit link)
 }
 \description{
-This function performs ancestral reconstruction of function-valued traits. Currently only logistic regression (glm with logit link) is implemented.
+This function performs ancestral reconstruction of function-valued traits (assuming Brownian motion).
 }
 \usage{
 phylocurve(formula, tree, data, ymin = 0.01, ymax = 0.99, ylength = 30,

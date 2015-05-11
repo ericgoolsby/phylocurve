@@ -11,8 +11,8 @@ Tools for studying the evolution of function-valued traits (as well as other hig
 \tabular{ll}{
 Package: \tab phylocurve\cr
 Type: \tab Package\cr
-Version: \tab 1.0.0\cr
-Date: \tab 2015-03-19\cr
+Version: \tab 1.1.0\cr
+Date: \tab 2015-05-11\cr
 License: \tab GPL (>= 2)\cr
 }
 

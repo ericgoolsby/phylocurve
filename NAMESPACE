@@ -3,13 +3,21 @@ import(phytools)
 import(phylolm)
 import(geiger)
 import(abind)
+import(GPfit)
+import(dtw)
+import(drc)
 export(compare.multivar.rate.mult,
        compare.rate.mult,
        K.mult,
        get_aligned_function_data,
        get_tip_coefficients,
+       GP.fit,
+       nonlinear.fit,
        pgls.mult,
        phylocurve,
+       phylocurve.generalized,
+       phylocurve.trim,
+       polynomial.fit,
        rate.mult,
        sim.mult,
        sim.curves,

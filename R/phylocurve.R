@@ -13,6 +13,196 @@ phylocurve <- function(formula,tree,data,ymin=.01,ymax=.99,ylength=30,tip_coeffi
   pgls_curve(tree = tree,tip_coefficients = tip_coefficients,ymin = ymin,ymax = ymax,ylength = ylength,verbose = verbose)
 }
 
+phylocurve.generalized <- function(tree,X,Y)
+{
+  nspecies <- length(tree$tip.label)
+  p <- fast_anc_hand(x = X,Y = Y,tree = tree)
+  tree1 <- multi2di(tree)
+  ancx <- apply(t(matrix(p$aligned_coordinates$x,ncol = nspecies,dimnames = list(NULL,tree1$tip.label))),2,function(X) ace(X,tree1,method="pic")$ace[1])
+  ancy <- apply(t(matrix(p$aligned_coordinates$y,ncol = nspecies,dimnames = list(NULL,tree1$tip.label))),2,function(X) ace(X,tree1,method="pic")$ace[1])
+  p$nr <- nrow(p$aligned_coordinates)/nspecies
+  
+  ret <- c(p,list(anc_X=ancx,anc_Y=ancy,tree=tree))
+  ret
+}
+
+polynomial.fit <- function(data, x_variable, y_variable, method = "BIC",
+                           nterms = 2,min_x = -Inf,max_x = Inf,min_y = 0, max_y = Inf,eval_length=30)
+{
+  if(is.null(colnames(data))) stop("data variable must have column names")
+  speciesInd <- match("species", colnames(data))
+  xInd <- match(x_variable, colnames(data))
+  yInd <- match(y_variable, colnames(data))
+  if(is.na(speciesInd)) stop("data variable must have column named 'species'")
+  if(is.na(xInd)) stop("data variable must have a column name matching x_variable")
+  if(is.na(yInd)) stop("data variable must have a column name matching y_variable")
+  dat <- data[,c(speciesInd,xInd,yInd)]
+  colnames(dat) <- c("species","x","y")
+  dat <- dat[dat$x>=min_x & dat$x<=max_x,]
+  new_x <- unique(dat[,2])
+  new_x <- seq(min(new_x),max(new_x),length=max(length(new_x),eval_length))
+  species <- unique(as.character(dat[,1]))
+  nspecies <- length(species)
+  
+  mod_list <- vector("list",nspecies)
+  names(mod_list) <- unique(as.character(dat$species))
+  
+  ret <- matrix(NA,nrow = nspecies,ncol = length(new_x))
+  colnames(ret) <- new_x
+  rownames(ret) <- species
+  mod <- "y ~ x"
+  for(i in 1:nterms)
+  {
+    mod <- paste(mod," + I(x^",i,") ",sep="",collapse="")
+  }
+  mod <- formula(mod)
+  
+  for(i in 1:nspecies)
+  {
+    temp_species <- species[i]
+    x <- dat[dat[,1]==temp_species,2]
+    y <- dat[dat[,1]==temp_species,3]
+    complete_cases_y <- which(complete.cases(y))
+    x <- x[complete_cases_y]
+    y <- y[complete_cases_y]
+    n <- length(complete_cases_y)
+    temp_lm <- lm(mod)
+    k <- if(method=="AIC") 2 else log(n)
+    mod_list[[i]] <- step(temp_lm,direction = "both",k = k,trace = 0)
+    if(length(coef(mod_list[[i]]))==1) mod_list[[i]] <- lm(y~x)
+    pred_y <- predict.lm(mod_list[[i]],newdata = data.frame(x=new_x))
+    pred_y[pred_y<min_y] <- min_y
+    pred_y[pred_y>max_y] <- max_y
+    ret[i,] <- pred_y
+  }
+  ret <- ret[complete.cases(ret),]
+  list(X=new_x,Y=ret)
+}
+
+nonlinear.fit <- function(data, x_variable, y_variable, fct = LL2.3(),
+                          min_x = -Inf,max_x = Inf,min_y = 0, max_y = Inf,eval_length = 30,...)
+{
+  if(is.null(colnames(data))) stop("data variable must have column names")
+  speciesInd <- match("species", colnames(data))
+  xInd <- match(x_variable, colnames(data))
+  yInd <- match(y_variable, colnames(data))
+  if(is.na(speciesInd)) stop("data variable must have column named 'species'")
+  if(is.na(xInd)) stop("data variable must have a column name matching x_variable")
+  if(is.na(yInd)) stop("data variable must have a column name matching y_variable")
+  dat <- data[,c(speciesInd,xInd,yInd)]
+  colnames(dat) <- c("species","x","y")
+  dat <- dat[dat$x>=min_x & dat$x<=max_x,]
+  new_x <- unique(dat[,2])
+  new_x <- seq(min(new_x),max(new_x),length=max(length(new_x),eval_length))
+  species <- unique(as.character(dat[,1]))
+  nspecies <- length(species)
+  
+  mod_list <- vector("list",nspecies)
+  names(mod_list) <- unique(as.character(dat$species))
+  
+  ret <- matrix(NA,nrow = nspecies,ncol = length(new_x))
+  colnames(ret) <- new_x
+  rownames(ret) <- species
+  
+  for(i in 1:nspecies)
+  {
+    temp_species <- species[i]
+    x <- dat[dat[,1]==temp_species,2]
+    y <- dat[dat[,1]==temp_species,3]
+    complete_cases_y <- which(complete.cases(y))
+    x <- x[complete_cases_y]
+    y <- y[complete_cases_y]
+    temp_lm <- try(drm(y~x,fct = fct,...),silent=TRUE)
+    if(class(temp_lm)=="try-error")
+    {
+      warning("Convergence failed for ",temp_species,". Using simple linear regression.",immediate. = TRUE)
+      pred_y <- predict(lm(y~x),newdata = data.frame(x=new_x))
+    } else
+    {
+      mod_list[[i]] <- temp_lm
+      pred_y <- predict(mod_list[[i]],newdata = data.frame(x=new_x))
+    }
+    pred_y[pred_y<min_y] <- min_y
+    pred_y[pred_y>max_y] <- max_y
+    ret[i,] <- pred_y
+  }
+  
+  ret <- ret[complete.cases(ret),]
+  list(X=new_x,Y=ret)
+}
+
+GP.fit <- function(data, x_variable, y_variable,
+                   min_x = -Inf,max_x = Inf,min_y = 0, max_y = Inf,eval_length = 30,...)
+{
+  if(is.null(colnames(data))) stop("data variable must have column names")
+  speciesInd <- match("species", colnames(data))
+  xInd <- match(x_variable, colnames(data))
+  yInd <- match(y_variable, colnames(data))
+  if(is.na(speciesInd)) stop("data variable must have column named 'species'")
+  if(is.na(xInd)) stop("data variable must have a column name matching x_variable")
+  if(is.na(yInd)) stop("data variable must have a column name matching y_variable")
+  dat <- data[,c(speciesInd,xInd,yInd)]
+  colnames(dat) <- c("species","x","y")
+  dat <- dat[dat$x>=min_x & dat$x<=max_x,]
+  new_x <- unique(dat[,2])
+  new_x <- seq(min(new_x),max(new_x),length=max(length(new_x),eval_length))
+  species <- unique(as.character(dat[,1]))
+  nspecies <- length(species)
+  
+  mod_list <- vector("list",nspecies)
+  names(mod_list) <- unique(as.character(dat$species))
+  
+  ret <- matrix(NA,nrow = nspecies,ncol = length(new_x))
+  colnames(ret) <- new_x
+  rownames(ret) <- species
+  
+  for(i in 1:nspecies)
+  {
+    temp_species <- species[i]
+    x <- dat[dat[,1]==temp_species,2]
+    y <- dat[dat[,1]==temp_species,3]
+    complete_cases_y <- which(complete.cases(y))
+    x <- x[complete_cases_y]
+    y <- y[complete_cases_y]
+    temp_lm <- try(GP_fit(X = normalize_to_01(c(range(new_x),x))[-(1:2)],Y = y,...),silent=TRUE)
+    if(class(temp_lm)=="try-error")
+    {
+      warning("Convergence failed for ",temp_species,". Using simple linear regression.",immediate. = TRUE)
+      pred_y <- predict(lm(y~x),newdata = data.frame(x=new_x))
+    } else
+    {
+      mod_list[[i]] <- temp_lm
+      pred_y <- predict.GP(mod_list[[i]],xnew = normalize_to_01(new_x))[[1]]
+    }
+    pred_y[pred_y<min_y] <- min_y
+    pred_y[pred_y>max_y] <- max_y
+    ret[i,] <- pred_y
+  }
+  ret <- ret[complete.cases(ret),]
+  list(X=new_x,Y=ret)
+}
+
+phylocurve.trim <- function(phylocurve.generalized,min_Y = -Inf,max_Y = Inf,min_X = -Inf,max_X = Inf)
+{
+  p <- phylocurve.generalized
+  tree <- p$tree
+  ancx <- p$anc_X
+  ancy <- p$anc_Y
+  range_x <- which(ancx>min_X & ancx<max_X)
+  range_y <- which(ancy>min_Y & ancy<max_Y)
+  range <- intersect(range_x,range_y)
+  nspecies <- length(tree$tip.label)
+  nr <- nrow(p$aligned_coordinates)/nspecies
+  p$aligned_coordinates <- p$aligned_coordinates[as.double(sapply((1:nspecies-1)*max(nr),function(X) X + range)),]
+  p$aligned_data <- p$aligned_data[,c(1,range+1,range+nr+1)]
+  p$aligned_X <- p$aligned_X[,range]
+  p$aligned_Y <- p$aligned_Y[,range]
+  p$anc_X <- p$anc_X[range]
+  p$anc_Y <- p$anc_Y[range]
+  p$nr <- nr
+  p
+}
+
 get_tip_coefficients <- function(formula,tree,data,ymin=.01,ymax=.99,ylength=30,species_identifier="species",verbose=FALSE)
 {
   if(!(species_identifier %in% colnames(data))) stop("Add species names column to data.")
@@ -69,7 +259,7 @@ pgls_curve <- function(tree,tip_coefficients,varAY,vals_only=FALSE,ymin,ymax,yle
     varA <- M[(nspecies+1):(nspecies+Nnode), (nspecies+1):(nspecies+Nnode)]
     colnames(varAY) <- tree$tip.label
   }
-
+  
   nspecies <- length(tree$tip.label)
   Nnode <- tree$Nnode
   X <- matrix(1,nspecies,1)
@@ -115,7 +305,7 @@ pgls_curve <- function(tree,tip_coefficients,varAY,vals_only=FALSE,ymin,ymax,yle
   colnames(CI) <- colnames(anc_vals) <- (nspecies+1):(nspecies+tree$Nnode)
   lower_CI <- anc_vals - CI
   upper_CI <- anc_vals + CI
-  return(list(node_coefficients=ret,fitted_x=anc_vals,lower_CI_x=lower_CI,upper_CI_x=upper_CI,y_vals=seq(ymin,ymax,length=ylength),tip_coefficients=tip_coefficients))
+  return(list(node_coefficients=ret,fitted_x=anc_vals,lower_CI_x=lower_CI,upper_CI_x=upper_CI,y_vals=seq(ymin,ymax,length=ylength),tip_coefficients=tip_coefficients,tip_X=Yinv))
 }
 
 # logit function
@@ -170,7 +360,7 @@ logit_m_func <- function(slope,ec50)
 sim.curves <- function(nspecies = 30,x_length=20,startree=FALSE,lambda=1,seed)
 {
   if(!missing(seed)) set.seed(seed)
-  x <- seq(0,15,length=x_length) # environmental gradient
+  x <- seq(0,10,length=x_length) # environmental gradient
   tree <- pbtree(n=nspecies)
   if(!missing(lambda)) simtree <- rescale(tree,"lambda",lambda=lambda) else simtree <- tree
   if(startree) simtree <- starTree(tree$tip.label,rep(1,length(tree$tip.label)))
@@ -1257,7 +1447,7 @@ print.lr.test <- function(x,...)
 {
   cat("Null model:\n")
   cat("\t",if(x$method=="REML") "Restricted log-" else "Log-") 
-      cat("likelihood = ",x$null.logL)
+  cat("likelihood = ",x$null.logL)
   cat("\t","Number of parameters = ",x$null.pars)
   
   cat("\nAlternative model:\n")
@@ -1268,4 +1458,172 @@ print.lr.test <- function(x,...)
   cat("\n\nDegrees of freedom = ",x$df) 
   cat("\nChi-square value = ",x$chi_sq)
   cat("\np-value = ",x$p)
+}
+
+# calculates Felsenstein's ancestral state reconstruction values
+ace_hand <- function(x,Y,tree,gpr_fit=TRUE,gp_list)
+{
+  gp_missing <- missing(gp_list)
+  nspecies <- length(tree$tip.label)
+  if(gp_missing)
+  {
+    gp_list <- vector("list",nspecies)
+    names(gp_list) <- tree$tip.label
+  }
+  if(gpr_fit) x <- normalize_to_01((x-min(x))/(max(x)-min(x)))
+  
+  Y <- Y[tree$tip.label,]
+  Y <- rbind(Y,matrix(0,nrow=tree$Nnode,ncol=ncol(Y)))
+  v1_lookup <- v2_lookup <- n1 <- n2 <- d1 <- d2 <- double(1)
+  corrected_d <- tree$edge.length
+  for(i in (tree$Nnode+nspecies):(nspecies+1))
+  {
+    v1_lookup <- which(tree$edge[,1]==i)[1]
+    v2_lookup <- which(tree$edge[,1]==i)[2]
+    n1 <- tree$edge[v1_lookup,2] # node 1 number
+    n2 <- tree$edge[v2_lookup,2] # node 2 number
+    d1 <- (1-(corrected_d[v1_lookup]/(corrected_d[v1_lookup]+corrected_d[v2_lookup])))
+    d2 <- (1-(corrected_d[v2_lookup]/(corrected_d[v1_lookup]+corrected_d[v2_lookup])))
+    if(gpr_fit)
+    {
+      if(!(gp_missing)) gp1 <- gp_list[[n1]] else gp1 <- GP_fit(x,Y[n1,])
+      if(!(gp_missing)) gp2 <- gp_list[[n2]] else gp2 <- GP_fit(x,Y[n2,])
+      if(n1<=nspecies) gp_list[[n1]] <- gp1
+      if(n2<=nspecies) gp_list[[n2]] <- gp2
+      time_warp <- dtw(predict(gp1,x)$Y_hat,predict(gp2,x)$Y_hat)
+    } else
+    {
+      gp1 <- coef(glm(Y[n1,]~x,family=quasibinomial("logit")))
+      gp2 <- coef(glm(Y[n2,]~x,family=quasibinomial("logit")))
+      time_warp <- dtw(logit_fx(gp1,x),logit_fx(gp2,x))
+    }
+    
+    new_x1 <- (((max(x)-min(x))*(time_warp$index1-min(time_warp$index1))) / (max(time_warp$index1) - min(time_warp$index1))) + min(x)
+    new_x2 <- (((max(x)-min(x))*(time_warp$index2-min(time_warp$index2))) / (max(time_warp$index2) - min(time_warp$index2))) + min(x)
+    if(gpr_fit)
+    {
+      new_y1 <- predict(gp1,new_x1)$Y_hat
+      new_y2 <- predict(gp2,new_x2)$Y_hat
+    } else
+    {
+      new_y1 <- logit_fx(gp1,new_x1)
+      new_y2 <- logit_fx(gp2,new_x2)
+    }
+    anc_x <- (d1*new_x1) + (d2*new_x2)
+    anc_y <- (d1*new_y1) + (d2*new_y2)
+    if(gpr_fit)
+    {
+      anc_gp <- GP_fit(anc_x,anc_y)
+      Y[i,] <- predict(anc_gp,x)$Y_hat
+    } else
+    {
+      anc_gp <- coef(glm(anc_y~anc_x,family=quasibinomial("logit")))
+      Y[i,] <- logit_fx(anc_gp,x)
+    }
+    corrected_d[which(tree$edge[,2]==i)] <- corrected_d[which(tree$edge[,2]==i)]+((corrected_d[v1_lookup]*corrected_d[v2_lookup])/(corrected_d[v1_lookup]+corrected_d[v2_lookup]))
+  }
+  anc_y <- Y[(length(tree$tip.label)+1):(tree$Nnode+length(tree$tip.label)),]
+  return(list(anc_y=anc_y,gp_list=gp_list,anc_gp=anc_gp))
+}
+
+# calculates ancestral state reconstruction with pairwise dynamic time warping and 
+# the fast PIC method (adapted from fastAnc in phytools)
+fast_anc_hand <- function(x,Y,tree,root_only=TRUE,gpr_fit=TRUE)
+{
+  if(is.null(rownames(Y)))
+  {
+    rownames(Y) <- tree$tip.label
+    warning("No taxa labels attached to coefficients. Assuming order matches tips on tree.")
+  } else
+  {
+    temp <- match(tree$tip.label,rownames(Y))
+    Y <- Y[temp,]
+  }
+  
+  tip_gp <- vector("list",length = nrow(Y))
+  
+  M <- tree$Nnode
+  N <- length(tree$tip.label)
+  a <- tree
+  node_vals <- matrix(0,M,ncol(Y))
+  # calculate root state
+  for(i in 1:M + N)
+  {
+    a <- multi2di(root(tree,node=(i)))
+    if(i==(1+N))
+    {
+      res <- ace_hand(x,Y,tree=a,gpr_fit = gpr_fit)
+      gp_list <- res$gp_list
+      anc_Y <- res[[1]][1,]
+      anc_gp <- res$anc_gp
+    } else
+    {
+      res <- ace_hand(x,Y,tree=a,gpr_fit = gpr_fit,gp_list = gp_list)
+    }
+    node_vals[i-N,] <- res[[1]][1,]
+    if(root_only)
+    {
+      #return(node_vals[1,])
+      break
+    }
+  }
+  rownames(node_vals) <- 1:M + N
+  
+  alignments <- vector("list",nrow(Y))
+  names(alignments) <- names(res$gp_list)
+  max_dtw <- rep(1,length(x))
+  for(i in 1:nrow(Y))
+  {
+    alignments[[i]] <- dtw(Y[i,],anc_Y)
+    temp_max <- tapply(alignments[[i]]$index2,alignments[[i]]$index2,length)
+    max_dtw[temp_max > max_dtw] <- temp_max[temp_max > max_dtw]
+  }
+  anc_align <- numeric()
+  for(i in 1:length(x))
+  {
+    anc_align <- c(anc_align,rep(i,max_dtw[i]))
+  }
+  
+  x_align <- matrix(0,nrow = nrow(Y),ncol = length(anc_align))
+  
+  for(j in 1:nrow(Y))
+  {
+    low <- 1
+    for(i in 1:length(x))
+    {
+      temp_align <- alignments[[j]]$index1
+      temp_ref <- alignments[[j]]$index2
+      temp_align <- temp_align[temp_ref==i]
+      temp_range <- (round(seq(min(temp_align),max(temp_align),length=max_dtw[i])))
+      high <- low + max_dtw[i] - 1
+      x_align[j,low:high] <-  temp_range
+      low <- high + 1
+    }
+  }
+  convert_x <- (x-min(x))/(max(x)-min(x))
+  new_x <- apply(x_align,1,function(X) x[X])
+  new_convert_x <- (new_x-min(x))/(max(x)-min(x))
+  new_Y <- matrix(0,nrow = nrow(Y),ncol = nrow(new_x))
+  for(i in 1:nrow(Y))
+  {
+    new_Y[i,] <- predict.GP(gp_list[[i]],xnew = new_convert_x[,i])$Y_hat
+  }
+  new_x <- t(new_x)
+  rownames(new_Y) <- rownames(new_x) <- tree$tip.label
+  aligned_data <- data.frame(species=tree$tip.label,new_x,new_Y,row.names=tree$tip.label)
+  colnames(aligned_data) <- c("species",paste("x",1:ncol(new_x),sep=""),paste("y",1:ncol(new_Y),sep=""))
+  aligned_coordinates <- data.frame(species = as.character(t(matrix(rep(tree$tip.label,ncol(new_x)),ncol=ncol(new_x)))),
+                                    x = as.double(t(new_x)),
+                                    y = as.double(t(new_Y)))
+  return(list(aligned_data=aligned_data,aligned_coordinates=aligned_coordinates,aligned_X=new_x,aligned_Y=new_Y))
+}
+
+normalize_to_01 <- function(x)
+{
+  max_x <- max(x)
+  min_x <- min(x)
+  ret <- ((x-min_x) / (max_x - min_x))
+  ret[ret<0] <- 0
+  ret[ret>1] <- 1
+  ret
 }
