@@ -1,3 +1,6 @@
+## Updates
+* June 12, 2015 - Version 1.2.0 - Major bug fix: changed tapply() to ave() to preserve ordering of factors
+
 ## Test environments
 * Local Windows 8 install, R 3.2.0
 * win-builder (devel and release)

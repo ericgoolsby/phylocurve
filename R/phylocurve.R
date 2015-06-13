@@ -485,7 +485,7 @@ sim.mult <- function(nspecies,R,error,nreps=1,nmissing=0,model,parameters,anc,tr
     ### reorder species by tree tips
     Y_raw <- data.frame(species=as.character(rep(tree$tip.label,nreps)),Y_raw)
     colnames(Y_raw)[1:ncol(R)+1] <- colnames(Y) <- paste("V",1:ncol(R),sep="")
-    Y_means <- apply(Y_raw[,1:ncol(R)+1,drop=F],2,function(X) tapply(X,Y_raw$species,FUN = function(Y) mean(Y,na.rm = TRUE)))
+    Y_means <- apply(Y_raw[,1:ncol(R)+1,drop=F],2,function(X) ave(X,Y_raw$species,FUN = function(Y) mean(Y,na.rm = TRUE)))
     Y_means <- Y_means[tree$tip.label,,drop=F]
     Y_array <- array(t(Y_means),dim = c(ncol(R),1,nspecies),dimnames = list(colnames(Y),NULL,rownames(Y_means))) 
     Y_means <- data.frame(species=as.character(rownames(Y_means)),Y_means)
@@ -509,11 +509,11 @@ rate.mult <- function(tree=tree,Y=Y,type=c("mult","diag","all"),
   nspecies <- length(tree$tip.label)
   if(error=="estimate")
   {
-    mean_data <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) tapply(X,Y[,1],function(Y) mean(Y,na.rm=TRUE)))
+    mean_data <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) ave(X,Y[,1],FUN = function(Y) mean(Y,na.rm=TRUE)))
     mean_data <- data.frame(species=rownames(mean_data),mean_data)
-    vars <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) tapply(X,Y[,1],function(Y) var(Y,na.rm=TRUE)))
+    vars <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) ave(X,Y[,1],FUN = function(Y) var(Y,na.rm=TRUE)))
     vars[is.na(vars)] <- 0
-    ns <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) tapply(X,Y[,1],function(Y) length(which(!is.na(Y)))))
+    ns <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) ave(X,Y[,1],FUN = function(Y) length(which(!is.na(Y)))))
     num <- colSums(vars * (ns-1))
     temp_ns <- ns
     temp_ns[temp_ns<1] <- NA
@@ -545,7 +545,7 @@ rate.mult <- function(tree=tree,Y=Y,type=c("mult","diag","all"),
   }
   if(nrow(Y)>length(tree$tip.label))
   {
-    mean_data <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) tapply(X,Y[,1],function(Y) mean(Y,na.rm=TRUE)))
+    mean_data <- apply(Y[,2:ncol(Y),drop=FALSE],2,function(X) ave(X,Y[,1],FUN = function(Y) mean(Y,na.rm=TRUE)))
     mean_data <- data.frame(species=rownames(mean_data),mean_data)
     Y <- mean_data[tree$tip.label,,drop=FALSE]
   }
@@ -700,7 +700,7 @@ rate.mult <- function(tree=tree,Y=Y,type=c("mult","diag","all"),
           init <- init + (temp_nspecies-1)*est_BM(Y = temp_Y,tree = temp_tree,type = type,method = method,nspecies = nspecies,
                                                   nvar = 1,ones = temp_ones,anc = anc[i],sigma2 = sigma2[i],SS = SS[i])$sigma2
         }
-        init <- init / (sum(apply(Y[,1:nvar+1,drop=F],2,function(X) tapply(X,Y$species,function(Y) length(which(!is.na(Y))))),na.rm = TRUE) - nvar)
+        init <- init / (sum(apply(Y[,1:nvar+1,drop=F],2,function(X) ave(X,Y$species,FUN = function(Y) length(which(!is.na(Y))))),na.rm = TRUE) - nvar)
       } else init <- fixed_sigma2
       #if(!is.na(fixed_model_pars[1])) fixed_model_pars[names(fixed_model_pars)!="rate"] <- log(fixed_model_pars[names(fixed_model_pars)!="rate"])
       init <- c(log(init),if(is.na(fixed_model_pars[1])) starting.values.default else fixed_model_pars)
@@ -1575,7 +1575,7 @@ fast_anc_hand <- function(x,Y,tree,root_only=TRUE,gpr_fit=TRUE)
   for(i in 1:nrow(Y))
   {
     alignments[[i]] <- dtw(Y[i,],anc_Y)
-    temp_max <- tapply(alignments[[i]]$index2,alignments[[i]]$index2,length)
+    temp_max <- ave(alignments[[i]]$index2,alignments[[i]]$index2,FUN = function(X) length(X))
     max_dtw[temp_max > max_dtw] <- temp_max[temp_max > max_dtw]
   }
   anc_align <- numeric()
