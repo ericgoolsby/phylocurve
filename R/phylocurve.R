@@ -570,6 +570,7 @@ rate.mult <- function(tree=tree,Y=Y,type=c("mult","diag","all"),
     mean_data <- data.frame(species=rownames(mean_data),mean_data)
     Y <- mean_data[tree$tip.label,,drop=FALSE]
   }
+  Y$species <- as.character(Y$species)
   type <- type[1]
   method <- method[1]
   nvar <- ncol(Y)-1
