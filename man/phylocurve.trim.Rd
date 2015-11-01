@@ -58,8 +58,4 @@ Eric W. Goolsby
 # plot(P$anc_X,P$anc_Y)
 #
 # P.trimmed <- phylocurve.trim(phylocurve.generalized = P,min_X = 4,max_X = 8)
-#
-# Perform comparative analyses on trimmed curves
-# rate.mult.fitted <- rate.mult(tree = P.trimmed$tree,Y = P.trimmed$aligned_data)
-# K.mult(rate.mult.fitted)
 }

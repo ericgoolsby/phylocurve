@@ -5,14 +5,14 @@
 Phylogenetic Comparative Methods for Function-Valued and Other High-Dimensional Traits
 }
 \description{
-Tools for studying the evolution of function-valued traits (as well as other high-dimensional traits) including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated trait evolution.
+Tools for studying the evolution of high-dimensional traits (in particular, function-valued traits), including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated trait evolution.
 }
 \details{
 \tabular{ll}{
 Package: \tab phylocurve\cr
 Type: \tab Package\cr
-Version: \tab 1.3.0\cr
-Date: \tab 2015-06-14\cr
+Version: \tab 2.0.0\cr
+Date: \tab 2015-11-01\cr
 License: \tab GPL (>= 2)\cr
 }
 

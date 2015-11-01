@@ -34,12 +34,13 @@ Eric W. Goolsby
 \code{\link[geomorph]{physignal}}
 }
 \examples{
-# Simulate random data for a multivariate trait with 50 species and 10 trait dimensions
-s <- sim.mult(nspecies = 50,R = diag(10))
+# Simulate random data for a multivariate trait
+s <- sim.traits()
 
-# Estimate evolutionary rates
-rate.mult.fitted <- rate.mult(tree = s$tree,Y = s$Y_means)
+# Estimate the evolutionary model
+rate.mult.fitted <- rate.mult(tree = s$tree,Y = s$trait_data)
 
 # Estimate multivariate phylogenetic signal
-K.mult(rate.mult.fitted = rate.mult.fitted)
+# (not run)
+#K.mult(model = rate.mult.fitted)
 }

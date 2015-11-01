@@ -1,11 +1,11 @@
 Package: phylocurve
-Version: 1.3.0
+Version: 2.0.0
 Date: 2015-06-14
-Title: Phylogenetic Comparative Methods for Function-Valued and Other High-Dimensional Traits
+Title: Phylogenetic Comparative Methods for High-Dimensional Traits
 Author: Eric W. Goolsby
 Maintainer: Eric W. Goolsby <eric.goolsby.evolution@gmail.com>
-Description: Tools for studying the evolution of function-valued traits (as well as other high-dimensional traits) including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated trait evolution. Visit http://www.phylocurve.org for more information.
+Description: Tools for studying the evolution of high-dimensional traits (morphometric, function-valued, etc.) including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated trait evolution. Visit http://www.phylocurve.org for more information.
 License: GPL (>= 2)
 URL: http://www.phylocurve.org
-Depends: drc
-Imports: ape, geiger, phytools, abind, phylolm, GPfit, dtw
+Imports: Rcpp, ape, drc, dtw, geiger, geomorph, GPfit, Matrix, mvnmle, phylolm, phytools
+LinkingTo: Rcpp, RcppArmadillo

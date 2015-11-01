@@ -66,8 +66,8 @@ sim_data <- sim.curves()
 anc_recon <- phylocurve(y~x,tree = sim_data$tree,data = sim_data$data)
 
 # get tip coefficients and aligned function data
-tip_coefficients <- get_tip_coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
-data <- get_aligned_function_data(tip_coefficients)
+tip_coefficients <- get.tip.coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
+data <- get.aligned.function.data(tip_coefficients)
 
 # estimate evolutionary rates
 rate.mult.fitted <- rate.mult(sim_data$tree,data)
