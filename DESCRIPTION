@@ -7,5 +7,5 @@ Maintainer: Eric W. Goolsby <eric.goolsby.evolution@gmail.com>
 Description: Tools for studying the evolution of high-dimensional traits (morphometric, function-valued, etc.) including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated trait evolution. Visit http://www.phylocurve.org for more information.
 License: GPL (>= 2)
 URL: http://www.phylocurve.org
-Imports: Rcpp, ape, drc, dtw, geiger, geomorph, GPfit, Matrix, mvnmle, phylolm, phytools
+Imports: Rcpp, ape, drc, dtw, geiger, geomorph, GPfit, Matrix, mvnmle, phylolm, phytools, rgl, doSNOW, doParallel, foreach, parallel
 LinkingTo: Rcpp, RcppArmadillo

@@ -9,9 +9,15 @@ import(GPfit)
 importFrom(Matrix, nearPD)
 import(mvnmle)
 import(phylolm)
-importFrom(phytools, pbtree, starTree, fastBM)
+import(rgl)
+import(doParallel)
+import(doSNOW)
+import(parallel)
+import(foreach)
+importFrom(phytools, pbtree, starTree, fastBM, matchNodes)
 export(
   compare.models,
+  evo.model,
   fast.geomorph.compare.evol.rates,
   fast.geomorph.physignal,
   fast.geomorph.compare.multi.evol.rates,
@@ -21,17 +27,15 @@ export(
   get.tip.coefficients,
   GP.fit,
   K.mult,
-  multi.distFromRoot,
   nonlinear.fit,
   paint.edges,
   phylocurve,
   phylocurve.generalized,
   phylocurve.trim,
   polynomial.fit,
-  rate.mult,
   sim.curves,
   sim.traits
        )
 S3method(plot, compare.model)
 S3method(print, compare.model)
-S3method(print, rate.mult)
+S3method(print, evo.model)

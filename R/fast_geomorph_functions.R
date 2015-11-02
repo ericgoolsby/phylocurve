@@ -452,7 +452,7 @@ fasterAnc <- function(tree, x, vars = FALSE, CI = FALSE)
   else return(result)
 }
 
-fast.geomorph.phylo.pls <- function (A1, A2, phy, warpgrids = TRUE, iter = 999, label = NULL, 
+fast.geomorph.phylo.pls <- function (A1, A2, phy, iter = 999, label = NULL, 
                             verbose = FALSE, ShowPlot = TRUE) 
 {
   phy <- reorder(multi2di(phy),"postorder")
@@ -517,8 +517,8 @@ fast.geomorph.phylo.pls <- function (A1, A2, phy, warpgrids = TRUE, iter = 999, 
   data.all <- cbind(x, y)
   Nspec <- nrow(x)
   
-  pALL <- phylocurve:::prep_multipic(data.all,phy = phy)
-  pALL_results <- do.call(phylocurve:::multipic,pALL)
+  pALL <- prep_multipic(data.all,phy = phy)
+  pALL_results <- do.call(multipic,pALL)
   all <- pALL_results$contrasts
   R <- crossprod(all)/(Nspec-1)
   R12 <- R[xdims, ydims,drop=FALSE]
@@ -537,7 +537,7 @@ fast.geomorph.phylo.pls <- function (A1, A2, phy, warpgrids = TRUE, iter = 999, 
     data.all.r <- cbind(x, y.r)
     
     pALL$phe[1:Nspec,] <- data.all.r
-    pALL_results <- do.call(phylocurve:::multipic,pALL)
+    pALL_results <- do.call(multipic,pALL)
     all.r <- pALL_results$contrasts
     R.r <- crossprod(all.r)/(Nspec-1)
     R12.r <- R.r[xdims, ydims,drop=FALSE]
@@ -587,20 +587,6 @@ fast.geomorph.phylo.pls <- function (A1, A2, phy, warpgrids = TRUE, iter = 999, 
         text(XScores, YScores, label, adj = c(-0.7, 
                                               -0.7))
       }
-      if (warpgrids == TRUE) {
-        if (length(dim(A1)) == 3 && dim(A1)[2] == 2) {
-          screen(2)
-          tps(A1.ref, pls1.min, 20, sz = 0.7)
-          screen(3)
-          tps(A1.ref, pls1.max, 20, sz = 0.7)
-        }
-        if (length(dim(A2)) == 3 && dim(A2)[2] == 2) {
-          screen(4)
-          tps(A2.ref, pls2.min, 20, sz = 0.7)
-          screen(5)
-          tps(A2.ref, pls2.max, 20, sz = 0.7)
-        }
-      }
       close.screen(all.screens = TRUE)
       par(mar = c(5.1, 4.1, 4.1, 2.1))
     }
@@ -636,7 +622,6 @@ fast.geomorph.phylo.pls <- function (A1, A2, phy, warpgrids = TRUE, iter = 999, 
     return(list(`PLS Correlation` = pls.obs, pvalue = P.val))
   }
 }
-environment(fast.geomorph.phylo.pls) <- asNamespace("geomorph")
 
 fast.geomorph.procD.pgls <- 
 function (f1, phy, iter = 999, int.first = FALSE,
@@ -671,14 +656,14 @@ function (f1, phy, iter = 999, int.first = FALSE,
   df <- anova.parts.obs$df[1:k]
   dfE <- anova.parts.obs$df[k + 1]
   
-  pY <- phylocurve:::prep_multipic(Y,phy)
-  pY_results <- do.call(phylocurve:::multipic,pY)
+  pY <- prep_multipic(Y,phy)
+  pY_results <- do.call(multipic,pY)
   pX_list <- vector("list",k)
   for(i in 1:k)
   {
     temp_X <- Xs[[1]][[i+1]][,-1,drop=FALSE]
     rownames(temp_X) <- rownames(Y)
-    pX_list[[i]] <- phylocurve:::prep_multipic(temp_X,phy)
+    pX_list[[i]] <- prep_multipic(temp_X,phy)
   }
   y <- pY_results[[1]]
   SSres <- SStotal <- 0
@@ -686,7 +671,7 @@ function (f1, phy, iter = 999, int.first = FALSE,
   pX_results <- vector("list",k)
   for(i in 1:(k))
   {
-    pX_results[[i]] <- do.call(phylocurve:::multipic,pX_list[[i]])
+    pX_results[[i]] <- do.call(multipic,pX_list[[i]])
     x <- pX_results[[i]][[1]]
     XANC <- pX_results[[i]]$root[1,]
     XX <- crossprod(cbind(0,x)) + tcrossprod(c(1,XANC))*pY_results$sum_invV
@@ -712,7 +697,7 @@ function (f1, phy, iter = 999, int.first = FALSE,
     for(ii in 1:length(ind))
     {
       pY$phe[1:N,] <- pY$phe[ind[[ii]],,drop=FALSE]
-      pY_results <- do.call(phylocurve:::multipic,pY)
+      pY_results <- do.call(multipic,pY)
       y <- pY_results[[1]]
       SSres <- SStotal <- 0
       SSreg <- double(k)

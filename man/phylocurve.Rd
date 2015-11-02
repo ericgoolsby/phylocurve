@@ -8,7 +8,7 @@ This function performs ancestral reconstruction of function-valued traits (assum
 }
 \usage{
 phylocurve(formula, tree, data, ymin = 0.01, ymax = 0.99, ylength = 30,
-tip_coefficients, species_identifier = "species", verbose = FALSE)
+tip.coefficients, species.identifier = "species", verbose = FALSE)
 }
 \arguments{
   \item{formula}{
@@ -29,10 +29,10 @@ Because 0 and 1 are undefined for inverse logit functions, the minimum and maxim
   \item{ylength}{
 How many landmarks (points on the curve) to evaluate.
 }
-  \item{tip_coefficients}{
+  \item{tip.coefficients}{
 A matrix of regression coefficients can be provided instead of raw data. Row names should be species names, the first column should be the glm logit intercept parameter, and the second column should be the glm logit slope paramter.
 }
-  \item{species_identifier}{
+  \item{species.identifier}{
 Default is "species". Can be changed if the column in data has a different species identifier name.
 }
   \item{verbose}{
@@ -70,5 +70,5 @@ tip_coefficients <- get.tip.coefficients(formula = y~x,tree = sim_data$tree,data
 data <- get.aligned.function.data(tip_coefficients)
 
 # estimate evolutionary rates
-rate.mult.fitted <- rate.mult(sim_data$tree,data)
+evo.model.fitted <- evo.model(sim_data$tree,data)
 }

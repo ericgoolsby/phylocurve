@@ -266,39 +266,39 @@ Rinv5 <- function(nspecies,nedge,edge.length,anc,des,L,R,painted.edges,phylocov_
   ret
 }
 
-print.rate.mult <- function(x,...)
+print.evo.model <- function(x,...)
 {
   cat("\nEvolutionary rate(s) (sigma2mult):\n")
   print(simplify2array(x$sigma2.mult))
-  ndims <- ncol(x$rate.mult.args$Y)
-  if(x$rate.mult.args$multirate) cat("Evolutionary rates constrained to be equal.\n")
-  if(class(x$rate.mult.args$species.groups)=="factor") cat("Species groups:",levels(x$rate.mult.args$species.groups),"\n")
-  if(x$rate.mult.args$diag.phylocov) cat("Traits assumed to be independent (zero evolutionary covariance).")
-  if(length(x$rate.mult.args$force.zero.phylocov)>0) cat("Covariance of",length(x$rate.mult.args$force.zero.phylocov),"traits with remaining traits constrained to zero.\n")
-  if(length(x$rate.mult.args$fixed.par)>0) cat(names(x$model.par)," constrained to equal ",x$rate.mult.args$fixed.par,".\n",sep="")
-  if(class(x$rate.mult.args$fixed.effects)=="matrix") cat("Model fit with ", ncol(x$rate.mult.args$fixed.effects)," fixed effects.\n",sep="")
-  if(suppressWarnings(round(exp(lfactorial(ndims) - (log(2) + lfactorial(ndims-2)))))>x$rate.mult.args$max.combn) cat("Pairwise log-likelihood approximated via Monte Carlo simulation.\n")
+  ndims <- ncol(x$evo.model.args$Y)
+  if(x$evo.model.args$multirate) cat("Evolutionary rates constrained to be equal.\n")
+  if(class(x$evo.model.args$species.groups)=="factor") cat("Species groups:",levels(x$evo.model.args$species.groups),"\n")
+  if(x$evo.model.args$diag.phylocov) cat("Traits assumed to be independent (zero evolutionary covariance).")
+  if(length(x$evo.model.args$force.zero.phylocov)>0) cat("Covariance of",length(x$evo.model.args$force.zero.phylocov),"traits with remaining traits constrained to zero.\n")
+  if(length(x$evo.model.args$fixed.par)>0) cat(names(x$model.par)," constrained to equal ",x$evo.model.args$fixed.par,".\n",sep="")
+  if(class(x$evo.model.args$fixed.effects)=="matrix") cat("Model fit with ", ncol(x$evo.model.args$fixed.effects)," fixed effects.\n",sep="")
+  if(suppressWarnings(round(exp(lfactorial(ndims) - (log(2) + lfactorial(ndims-2)))))>x$evo.model.args$max.combn) cat("Pairwise log-likelihood approximated via Monte Carlo simulation.\n")
   cat("\nLog-likelihood: ",x$logL,"\n")
-  cat("Method: ",x$rate.mult.args$method,"\n")
+  cat("Method: ",x$evo.model.args$method,"\n")
   
   cat("\nEvolutionary model: ")
-  if(x$rate.mult.args$model[1]!="BM")
+  if(x$evo.model.args$model[1]!="BM")
   {
     cat("\n")
-    print(data.frame(Parameter=names(x$model.par),Value=x$model.par,row.names = x$rate.mult.args$model))
+    print(data.frame(Parameter=names(x$model.par),Value=x$model.par,row.names = x$evo.model.args$model))
   } else cat("BM")
   cat("\n")
 }
 
 
-rate.mult <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
+evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
                       model="BM", diag.phylocov=FALSE, method = "Pairwise REML", 
                       force.zero.phylocov=character(), species.id = "species", max.combn = 10000, painted.edges,
-                      skip.postorder = FALSE, ret.level = 2, plot.LL.surface = TRUE, par.init.iters = 50, fixed.par = numeric(),
+                      ret.level = 2, plot.LL.surface = TRUE, par.init.iters = 50, fixed.par = numeric(),
                       multirate = FALSE,subset=TRUE)
   # ret.level: 1=logL only, 2=multi rates, 3=full rates
 {
-  if(missing(skip.postorder)) tree <- reorder(tree,"postorder")
+  tree <- reorder(tree,"postorder")
   if(length(tree$edge.length)>nrow(tree$edge)) tree$edge.length <- tree$edge.length[1:nrow(tree$edge)]
   if(model=="OU") model <- "OUfixedRoot"
   if(missing(species.groups))
@@ -330,9 +330,9 @@ rate.mult <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
     warning("Setting multirate to TRUE because trait.groups was specified.",immediate. = TRUE)
   }
   if(method=="Pairwise REML" | method=="Full REML") REML <- 1 else REML <- 0
-  rate.mult.args <- as.list(environment())
-  rate.mult.args$REML <- rate.mult.args$trait.group.levels <- rate.mult.args$nrates.traits <- rate.mult.args$species.group.levels <-
-    rate.mult.args$nrates.species <- NULL
+  evo.model.args <- as.list(environment())
+  evo.model.args$REML <- evo.model.args$trait.group.levels <- evo.model.args$nrates.traits <- evo.model.args$species.group.levels <-
+    evo.model.args$nrates.species <- NULL
   nspecies <- length(tree$tip.label)
   nedge <- nrow(tree$edge)
   
@@ -394,7 +394,7 @@ rate.mult <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
       }
     }
     X <- X[tree$tip.label,,drop=FALSE]
-    rate.mult.args$fixed.effects <- X
+    evo.model.args$fixed.effects <- X
     X1 <- cbind(1,X)
   }
   
@@ -413,7 +413,6 @@ rate.mult <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
   # supply.full.cov
   # supply.pairwise.cov
   # supply.model
-  # skip.postorder
   
   # make sure data (Y) is properly formatted
   # if intraspecific==FALSE, matrices will be used
@@ -469,7 +468,7 @@ rate.mult <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
   if(!intraspecific & !missing_data)
   {
     Y <- Y[tree$tip.label,,drop=FALSE]
-    rate.mult.args$Y <- Y
+    evo.model.args$Y <- Y
     ndims <- ncol(Y)
     diagndims <- diag(ndims)
     diag2 <- diag(2)
@@ -621,6 +620,7 @@ rate.mult <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
           x_results <- do.call(multipic,pX)
           x <- x_results[[1]]
           XANC <- x_results$root[1,]
+          YANC <- a_results$root[1,]
           XX <- crossprod(cbind(0,x)) + tcrossprod(c(1,XANC))*suminvV_and_logdV[1]
           betas <- solve(crossprod(x),crossprod(x,a))
           BETAS <- solve(XX,XY)
@@ -906,9 +906,9 @@ rate.mult <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
       }
     }
     if(ret.level<3) ret$phylocov <- NULL
-    ret <- c(ret,list(sigma2.mult=sigma2.mult,rate.mult.args=rate.mult.args))
+    ret <- c(ret,list(sigma2.mult=sigma2.mult,evo.model.args=evo.model.args))
   }
-  class(ret) <- "rate.mult"
+  class(ret) <- "evo.model"
   return(ret)
 }
 
@@ -1098,11 +1098,11 @@ pre_parallel <- function()
   {
     if(Sys.info()["sysname"] == "Windows" & "doSNOW" %in% tmp)
     {
-      require(doSNOW)
+      requireNamespace("doSNOW")
       return(TRUE)
     } else if("doParallel" %in% tmp)
     {
-      require(doParallel)
+      requireNamespace("doParallel")
       return(TRUE)
     }
   } else return(FALSE)
@@ -1123,26 +1123,26 @@ multi.distFromRoot <- function (phy,edge.lengths)
 K.mult <- function(model,nsim=1000,plot=TRUE)
 {
   estimate_power <- TRUE
-  if(!is.binary.tree(model$rate.mult.args$tree)) FLAG <- TRUE else FLAG <- FALSE
-  nvar <- ncol(model$rate.mult.args$Y)
+  if(!is.binary.tree(model$evo.model.args$tree)) FLAG <- TRUE else FLAG <- FALSE
+  nvar <- ncol(model$evo.model.args$Y)
   null_model <- model
-  null_model$rate.mult.args$tree <- rescale(null_model$rate.mult.args$tree,model = "lambda",lambda=0)
+  null_model$evo.model.args$tree <- rescale(null_model$evo.model.args$tree,model = "lambda",lambda=0)
   sim_null <- sim.model(model = null_model,nsim = nsim)
   sim_alt <- sim.model(model = model,nsim = nsim)
   
-  args <- model$rate.mult.args
+  args <- model$evo.model.args
   args$ret.level <- 3
   if(args$model!="BM") args$fixed.par <- model1$model.par
-  model1 <- do.call(what = rate.mult,args = args)
+  model1 <- do.call(what = evo.model,args = args)
   
-  BMtree <- model$rate.mult.args$tree
+  BMtree <- model$evo.model.args$tree
   tree <- model1$transf_tree
   nspecies <- length(tree$tip.label)
   nedge <- nrow(tree$edge)
-  if(class(model$rate.mult.args$species.groups)=="factor") gps <- TRUE else gps <- FALSE
+  if(class(model$evo.model.args$species.groups)=="factor") gps <- TRUE else gps <- FALSE
   if(length(tree$edge.length)==nrow(tree$edge))
     if(!is.null(tree$root.edge)) tree$edge.length <- c(tree$edge.length[1:nedge],tree$root.edge) else tree$edge.length <- c(tree$edge.length[1:nedge],0)
-  model$rate.mult.args$ret.level <- 3
+  model$evo.model.args$ret.level <- 3
   new_edge <- matrix(0,nvar,nrow(tree$edge)+1)
   if(nrow(new_edge)>1) new_trees <- rep(tree,nrow(new_edge)) else new_trees <- list(tree)
   original_heights <- pruningwise.distFromRoot(reorder(tree,"pruningwise"))[1:nspecies]
@@ -1150,24 +1150,24 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
   sum_original_heights <- sum(original_heights)
   des_nodes <- tree$edge[,2]-1
   anc_nodes <- tree$edge[,1]-1
-  if(model$rate.mult.args$model=="BM") model$rate.mult.args$max.combn <- 1
-  pY <- prep_multipic2(model$rate.mult.args$Y,phy = model$rate.mult.args$tree,edge_len_mat = t(new_edge))
-  if(class(model$rate.mult.args$fixed.effects)=="matrix")
+  if(model$evo.model.args$model=="BM") model$evo.model.args$max.combn <- 1
+  pY <- prep_multipic2(model$evo.model.args$Y,phy = model$evo.model.args$tree,edge_len_mat = t(new_edge))
+  if(class(model$evo.model.args$fixed.effects)=="matrix")
   {
-    pX <- prep_multipic(model$rate.mult.args$fixed.effects,phy = model$rate.mult.args$tree)
+    pX <- prep_multipic(model$evo.model.args$fixed.effects,phy = model$evo.model.args$tree)
   }
   
   calc_denom <- function(Y,fixed_effects)
   {
-    model$rate.mult.args$Y <- Y
-    if(class(model$rate.mult.args$fixed.effects)=="matrix") model$rate.mult.args$fixed.effects <- fixed_effects
-    model <- do.call(rate.mult,model$rate.mult.args)
+    model$evo.model.args$Y <- Y
+    if(class(model$evo.model.args$fixed.effects)=="matrix") model$evo.model.args$fixed.effects <- fixed_effects
+    model <- do.call(evo.model,model$evo.model.args)
     
     if(gps)
     {
       for(i in 1:length(model$phylocov))
       {
-        new_edge <- new_edge + diag(model$phylocov[[i]]) %*% (t(tree$edge.length)*model$rate.mult.args$painted.edges[,i])
+        new_edge <- new_edge + diag(model$phylocov[[i]]) %*% (t(tree$edge.length)*model$evo.model.args$painted.edges[,i])
       }
     } else new_edge <- diag(model$phylocov) %*% t(tree$edge.length)
     new_heights <- multi.distFromRoot(tree,new_edge)
@@ -1177,9 +1177,9 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     pY$phe[1:nspecies,] <- Y
     pY_results <- do.call(multipic2,pY)
     
-    if(class(model$rate.mult.args$fixed.effects)=="matrix")
+    if(class(model$evo.model.args$fixed.effects)=="matrix")
     {
-      pX$phe[1:nspecies,] <- model$rate.mult.args$fixed.effects
+      pX$phe[1:nspecies,] <- model$evo.model.args$fixed.effects
       pX_results <- apply(new_edge,1,function(X) 
       {
         pX$edge_len <- X
@@ -1196,7 +1196,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     num <- sum(diag(crossprod((Y-model$predicted)/scale_res,Y-model$predicted)))
     sum_new_heights <- rowSums(new_heights)
     invsums <- pY_results$sum_invV[1,]
-    if(class(model$rate.mult.args$fixed.effects)!="matrix")
+    if(class(model$evo.model.args$fixed.effects)!="matrix")
     {
       ratio <- num / sum(diag(crossprod(pY_results$contrasts)))
     } else
@@ -1213,24 +1213,24 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
   
   for(i in 1:nsim)
   {
-    denom_ratio[i] <- if(class(model$rate.mult.args$fixed.effects)!="matrix")
-      calc_denom(Y = sim_alt$trait_data[[i]],fixed_effects = sim_alt$fixed_effectes[[i]]) else
-        calc_denom(Y = sim_alt$trait_data[[i]])
+    denom_ratio[i] <- if(class(model$evo.model.args$fixed.effects)!="matrix")
+      calc_denom(Y = sim_alt$trait_data[[i]]) else
+        calc_denom(Y = sim_alt$trait_data[[i]],fixed_effects = sim_alt$fixed_effectes[[i]])
   }
   
   e_ratio <- mean(denom_ratio)
   
   get_K <- function(Y,fixed_effects)
   {
-    model$rate.mult.args$Y <- Y
-    if(class(model$rate.mult.args$fixed.effects)=="matrix") model$rate.mult.args$fixed.effects <- fixed_effects
-    model <- do.call(rate.mult,model$rate.mult.args)
+    model$evo.model.args$Y <- Y
+    if(class(model$evo.model.args$fixed.effects)=="matrix") model$evo.model.args$fixed.effects <- fixed_effects
+    model <- do.call(evo.model,model$evo.model.args)
     
     if(gps)
     {
       for(i in 1:length(model$phylocov))
       {
-        new_edge <- new_edge + diag(model$phylocov[[i]]) %*% (t(tree$edge.length)*model$rate.mult.args$painted.edges[,i])
+        new_edge <- new_edge + diag(model$phylocov[[i]]) %*% (t(tree$edge.length)*model$evo.model.args$painted.edges[,i])
       }
     } else new_edge <- diag(model$phylocov) %*% t(tree$edge.length)
     new_heights <- multi.distFromRoot(tree,new_edge)
@@ -1240,9 +1240,9 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     pY$phe[1:nspecies,] <- Y
     pY_results <- do.call(multipic2,pY)
     
-    if(class(model$rate.mult.args$fixed.effects)=="matrix")
+    if(class(model$evo.model.args$fixed.effects)=="matrix")
     {
-      pX$phe[1:nspecies,] <- model$rate.mult.args$fixed.effects
+      pX$phe[1:nspecies,] <- model$evo.model.args$fixed.effects
       pX_results <- apply(new_edge,1,function(X) 
       {
         pX$edge_len <- X
@@ -1259,7 +1259,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     num <- sum(diag(crossprod((Y-model$predicted)/scale_res,Y-model$predicted)))
     sum_new_heights <- rowSums(new_heights)
     invsums <- pY_results$sum_invV[1,]
-    if(class(model$rate.mult.args$fixed.effects)!="matrix")
+    if(class(model$evo.model.args$fixed.effects)!="matrix")
     {
       K <- (num / sum(diag(crossprod(pY_results$contrasts)))) / e_ratio
     } else
@@ -1278,12 +1278,12 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     suppressWarnings
     {
     cat("\nBootstrapping under null model.\n")
-      for(i in 1:nsim) nullK[i] <- if(class(model$rate.mult.args$fixed.effects)=="matrix") get_K(sim_null$trait_data[[i]],sim_null$fixed_effects[[i]]) else get_K(sim_null$trait_data[[i]])
+      for(i in 1:nsim) nullK[i] <- if(class(model$evo.model.args$fixed.effects)=="matrix") get_K(sim_null$trait_data[[i]],sim_null$fixed_effects[[i]]) else get_K(sim_null$trait_data[[i]])
       altK <- denom_ratio / e_ratio
     }
   
-  K <- if(class(model$rate.mult.args$fixed.effects)=="matrix") get_K(model$rate.mult.args$Y,model$rate.mult.args$fixed.effects) else
-    get_K(model$rate.mult.args$Y)
+  K <- if(class(model$evo.model.args$fixed.effects)=="matrix") get_K(model$evo.model.args$Y,model$evo.model.args$fixed.effects) else
+    get_K(model$evo.model.args$Y)
   critical_K <- sort(nullK)[min(round(nsim*.95)+1,nsim)]
   if(plot)
   {
@@ -1327,11 +1327,11 @@ sim.model <- function(model,nsim=1000,return.type="matrix")
   }
   model1 <- model
   model1SAVE <- model1
-  perm_fixed_par_1 <- model1$rate.mult.args
-  nvar <- ncol(model1$rate.mult.args$Y)
+  perm_fixed_par_1 <- model1$evo.model.args
+  nvar <- ncol(model1$evo.model.args$Y)
   if(is.null(model1$phylocov))
   {
-    args <- model1$rate.mult.args
+    args <- model1$evo.model.args
     args$ret.level <- 3
     if(args$model!="BM") args$fixed.par <- model1$model.par
     if(class(perm_fixed_par_1$fixed.effects)=="matrix")
@@ -1339,24 +1339,24 @@ sim.model <- function(model,nsim=1000,return.type="matrix")
       args$Y <- cbind(args$Y,args$fixed.effects)
       args$fixed.effects <- NA
       colnames(args$Y)[(nvar+1):ncol(args$Y)] <- paste("temp_fixed_effect_",(nvar+1):ncol(args$Y),sep="")
-      model1 <- do.call(what = rate.mult,args = args)
-    } else model1 <- do.call(what = rate.mult,args = args)
+      model1 <- do.call(what = evo.model,args = args)
+    } else model1 <- do.call(what = evo.model,args = args)
   }
-  tree <- model1$rate.mult.args$tree
+  tree <- model1$evo.model.args$tree
   fixed_effect_1 <- rep(list(NA),nsim)
   if(is.list(model1$phylocov))
   {
-    sim1 <- sim.groups(tree = tree,groups = model1$rate.mult.args$species.groups,
-                                       painted.edges = model1$rate.mult.args$painted.edges,model = model1$rate.mult.args$model,
-                                       parameters=if(model1$rate.mult.args$model=="BM") list("BM") else 
-                                         as.list(model1$rate.mult.args$fixed.par),
+    sim1 <- sim.groups(tree = tree,groups = model1$evo.model.args$species.groups,
+                                       painted.edges = model1$evo.model.args$painted.edges,model = model1$evo.model.args$model,
+                                       parameters=if(model1$evo.model.args$model=="BM") list("BM") else 
+                                         as.list(model1$evo.model.args$fixed.par),
                                        phylocov = model1$phylocov,nsim = nsim,return.type=return.type)
   } else
   {
     sim1 <- sim.traits(nreps=1,nmissing=0,tree=tree,v=model1$phylocov,
-                                      model=model1$rate.mult.args$model,
-                                      parameters=if(model1$rate.mult.args$model=="BM") list("BM") else 
-                                        as.list(model1$rate.mult.args$fixed.par),nsim=nsim,return.type=return.type)
+                                      model=model1$evo.model.args$model,
+                                      parameters=if(model1$evo.model.args$model=="BM") list("BM") else 
+                                        as.list(model1$evo.model.args$fixed.par),nsim=nsim,return.type=return.type)
   }
   
   if(class(perm_fixed_par_1$fixed.effects)=="matrix")
@@ -1366,18 +1366,18 @@ sim.model <- function(model,nsim=1000,return.type="matrix")
       fixed_effect_1[[i]] <- as.matrix(sim1$trait_data[[i]][,(nvar+1):ncol(args$Y)+is.data.frame(sim1$trait_data[[i]])])
       sim1$trait_data[[i]] <- sim1$trait_data[[i]][,1:(nvar+is.data.frame(sim1$trait_data[[i]]))]
       rownames(fixed_effect_1[[i]]) <- tree$tip.label
-      colnames(fixed_effect_1[[i]]) <- colnames(model1SAVE$rate.mult.args$fixed.effects)
+      colnames(fixed_effect_1[[i]]) <- colnames(model1SAVE$evo.model.args$fixed.effects)
     }
     if(FLAG) fixed_effect_1 <- fixed_effect_1[1]
   }
   if(return.type=="matrix") 
   {
     for(i in 1:nsim) 
-      colnames(sim1$trait_data[[i]]) <- colnames(model1SAVE$rate.mult.args$Y)
+      colnames(sim1$trait_data[[i]]) <- colnames(model1SAVE$evo.model.args$Y)
   } else
   {
     for(i in 1:nsim) 
-      colnames(sim1$trait_data[[i]]) <- c(model1SAVE$rate.mult.args$species.id,colnames(model1SAVE$rate.mult.args$Y))
+      colnames(sim1$trait_data[[i]]) <- c(model1SAVE$evo.model.args$species.id,colnames(model1SAVE$evo.model.args$Y))
   }
   
   if(FLAG) sim1$trait_data <- sim1$trait_data[1]
@@ -1394,15 +1394,15 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
 {
   model1SAVE <- model1
   model2SAVE <- model2
-  perm_fixed_par_1 <- model1$rate.mult.args
-  perm_fixed_par_2 <- model2$rate.mult.args
-  conf_int <- (conf.int & (!is.null(model2$model.par) & length(model2$rate.mult.args$fixed.par)==0))
-  nvar <- ncol(model1$rate.mult.args$Y)
+  perm_fixed_par_1 <- model1$evo.model.args
+  perm_fixed_par_2 <- model2$evo.model.args
+  conf_int <- (conf.int & (!is.null(model2$model.par) & length(model2$evo.model.args$fixed.par)==0))
+  nvar <- ncol(model1$evo.model.args$Y)
   if(conf_int) estimate_power <- TRUE
   if(estimate_power & !is.null(model2$model.par)) conf_int <- TRUE
   if(is.null(model1$phylocov))
   {
-    args <- model1$rate.mult.args
+    args <- model1$evo.model.args
     args$ret.level <- 3
     if(args$model!="BM") args$fixed.par <- model1$model.par
     if(class(perm_fixed_par_1$fixed.effects)=="matrix")
@@ -1410,12 +1410,12 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       args$Y <- cbind(args$Y,args$fixed.effects)
       args$fixed.effects <- NA
       colnames(args$Y)[(nvar):ncol(args$Y)] <- paste("temp_fixed_effect_",(nvar+1):ncol(args$Y),sep="")
-      model1 <- do.call(what = rate.mult,args = args)
-    } else model1 <- do.call(what = rate.mult,args = args)
+      model1 <- do.call(what = evo.model,args = args)
+    } else model1 <- do.call(what = evo.model,args = args)
   }
   if(is.null(model2$phylocov))
   {
-    args <- model2$rate.mult.args
+    args <- model2$evo.model.args
     args$ret.level <- 3
     if(args$model!="BM") args$fixed.par <- model2$model.par
     if(class(perm_fixed_par_2$fixed.effects)=="matrix")
@@ -1423,24 +1423,24 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       args$Y <- cbind(args$Y,args$fixed.effects)
       args$fixed.effects <- NA
       colnames(args$Y)[(nvar):ncol(args$Y)] <- paste("temp_fixed_effect_",(nvar+1):ncol(args$Y),sep="")
-      model2 <- do.call(what = rate.mult,args = args)
-    } else model2 <- do.call(what = rate.mult,args = args)
+      model2 <- do.call(what = evo.model,args = args)
+    } else model2 <- do.call(what = evo.model,args = args)
   }
-  tree <- model1$rate.mult.args$tree
+  tree <- model1$evo.model.args$tree
   fixed_effect_1 <- fixed_effect_2 <- rep(list(NA),nsim)
   if(is.list(model1$phylocov))
   {
-    sim1 <- sim.groups(tree = tree,groups = model1$rate.mult.args$species.groups,
-                                       painted.edges = model1$rate.mult.args$painted.edges,model = model1$rate.mult.args$model,
-                                       parameters=if(model1$rate.mult.args$model=="BM") list("BM") else 
-                                         as.list(model1$rate.mult.args$fixed.par),
+    sim1 <- sim.groups(tree = tree,groups = model1$evo.model.args$species.groups,
+                                       painted.edges = model1$evo.model.args$painted.edges,model = model1$evo.model.args$model,
+                                       parameters=if(model1$evo.model.args$model=="BM") list("BM") else 
+                                         as.list(model1$evo.model.args$fixed.par),
                                        phylocov = model1$phylocov,nsim = nsim)
   } else
   {
     sim1 <- sim.traits(nreps=1,nmissing=0,tree=tree,v=model1$phylocov,
-                                      model=model1$rate.mult.args$model,
-                                      parameters=if(model1$rate.mult.args$model=="BM") list("BM") else 
-                                        as.list(model1$rate.mult.args$fixed.par),nsim=nsim)
+                                      model=model1$evo.model.args$model,
+                                      parameters=if(model1$evo.model.args$model=="BM") list("BM") else 
+                                        as.list(model1$evo.model.args$fixed.par),nsim=nsim)
   }
   
   if(class(perm_fixed_par_1$fixed.effects)=="matrix")
@@ -1457,15 +1457,15 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
   {
     if(is.list(model2$phylocov))
     {
-      sim2 <- sim.groups(tree = tree,groups = model2$rate.mult.args$species.groups,
-                                         painted.edges = model2$rate.mult.args$painted.edges,model = model2$rate.mult.args$model,
-                                         parameters=if(model2$rate.mult.args$model=="BM") list("BM") else as.list(model2$rate.mult.args$fixed.par),
+      sim2 <- sim.groups(tree = tree,groups = model2$evo.model.args$species.groups,
+                                         painted.edges = model2$evo.model.args$painted.edges,model = model2$evo.model.args$model,
+                                         parameters=if(model2$evo.model.args$model=="BM") list("BM") else as.list(model2$evo.model.args$fixed.par),
                                          phylocov = model2$phylocov,nsim = nsim)
     } else
     {
       sim2 <- sim.traits(nreps=1,nmissing=0,tree=tree,v=model2$phylocov,
-                                        model=model2$rate.mult.args$model,
-                                        parameters=if(model2$rate.mult.args$model=="BM") list("BM") else as.list(model2$rate.mult.args$fixed.par),nsim=nsim)
+                                        model=model2$evo.model.args$model,
+                                        parameters=if(model2$evo.model.args$model=="BM") list("BM") else as.list(model2$evo.model.args$fixed.par),nsim=nsim)
       
     }
     if(class(perm_fixed_par_2$fixed.effects)=="matrix")
@@ -1479,7 +1479,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
     }
   } else sim2 <- sim1
   
-  for(i in 1:nsim) colnames(sim1$trait_data[[i]]) <- colnames(sim2$trait_data[[i]]) <- colnames(model1SAVE$rate.mult.args$Y)
+  for(i in 1:nsim) colnames(sim1$trait_data[[i]]) <- colnames(sim2$trait_data[[i]]) <- colnames(model1SAVE$evo.model.args$Y)
   args1 <- perm_fixed_par_1
   args2 <- perm_fixed_par_2
   args1$ret.level <- args2$ret.level <- 1
@@ -1494,8 +1494,8 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       {
         if(pre_parallel())
         {
-          ncores <- parallel::detectCores()
-          cl <- makeCluster(ncores)
+          ncores <- detectCores()
+          cl <- if(Sys.info()["sysname"] == "Windows") makeCluster(ncores) else makeCluster(ncores)
           cat("registering...")
           if(Sys.info()["sysname"] == "Windows") registerDoSNOW(cl) else registerDoParallel(cl)
           cat("\nBootstrapping under null model.\n")
@@ -1505,7 +1505,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
             args2$Y <- sim1$trait_data[[i]]
             args1$fixed.effects <- fixed_effect_1[[i]]
             args2$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_1[[i]] else perm_fixed_par_2$fixed.effects
-            -2*(do.call(phylocurve::rate.mult,args1) - do.call(phylocurve::rate.mult,args2))
+            -2*(do.call(phylocurve::evo.model,args1) - do.call(phylocurve::evo.model,args2))
           })
           if(estimate_power)
           {
@@ -1519,8 +1519,8 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
                 args1$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
                 args2$fixed.effects <- fixed_effect_2[[i]]
                 args2$ret.level <- 2
-                null_LL <- do.call(phylocurve::rate.mult,args1)
-                alt_LL <- do.call(phylocurve::rate.mult,args2)
+                null_LL <- do.call(phylocurve::evo.model,args1)
+                alt_LL <- do.call(phylocurve::evo.model,args2)
                 list(D=-2*(null_LL - alt_LL$logL),model.par.sim=alt_LL$model.par[[1]])
               }
               alt_sim_LR <- sapply(alt_sim,function(X) X[[1]])
@@ -1533,13 +1533,13 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
                 args2$Y <- sim2$trait_data[[i]]
                 args1$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
                 args2$fixed.effects <- fixed_effect_2[[i]]
-                -2*(do.call(phylocurve::rate.mult,args1) - do.call(phylocurve::rate.mult,args2))
+                -2*(do.call(phylocurve::evo.model,args1) - do.call(phylocurve::evo.model,args2))
               })
             }
           }
         }
       },silent=TRUE)
-    try(stopCluster(cl),silent=TRUE)
+    try(if(Sys.info()["sysname"] == "Windows") stopCluster(cl) else stopCluster(cl),silent=TRUE)
   }
   if(!parallel | class(par_try)=="try-error")
   {
@@ -1551,7 +1551,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       args2$Y <- sim1$trait_data[[i]]
       args1$fixed.effects <- fixed_effect_1[[i]]
       args2$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_1[[i]] else perm_fixed_par_2$fixed.effects
-      null_sim_LR[i] <- -2*(do.call(rate.mult,args1) - do.call(rate.mult,args2))
+      null_sim_LR[i] <- -2*(do.call(evo.model,args1) - do.call(evo.model,args2))
     }
     if(estimate_power)
     {
@@ -1568,8 +1568,8 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
               args2$ret.level <- 2
               args1$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
               args2$fixed.effects <- fixed_effect_2[[i]]
-              null_LL <- do.call(rate.mult,args1)
-              alt_LL <- do.call(rate.mult,args2)
+              null_LL <- do.call(evo.model,args1)
+              alt_LL <- do.call(evo.model,args2)
               alt_sim[[i]] <- list(D=-2*(null_LL - alt_LL$logL),model.par.sim=alt_LL$model.par[[1]])
             }
           })
@@ -1586,7 +1586,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
               args2$Y <- sim2$trait_data[[i]]
               args1$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
               args2$fixed.effects <- fixed_effect_2[[i]]
-              alt_sim_LR[i] <- -2*(do.call(rate.mult,args1) - do.call(rate.mult,args2))
+              alt_sim_LR[i] <- -2*(do.call(evo.model,args1) - do.call(evo.model,args2))
             }
           })
       }
@@ -2348,7 +2348,7 @@ sim.traits <- function(ntaxa=15,ntraits=4,nreps=1,nmissing=0,tree,v,anc,intraspe
   if(missing(anc))
   {
     anc <- rep(0,ntraits)
-  } else if(length(anc)==1) anc <- rep(anc,ntriats)
+  } else if(length(anc)==1) anc <- rep(anc,ntraits)
   anc <- as.double(anc)
   
   if(missing(intraspecific)) intraspecific <- 0.1

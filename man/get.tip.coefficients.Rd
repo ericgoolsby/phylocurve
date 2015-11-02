@@ -49,5 +49,5 @@ tip.coefficients <- get.tip.coefficients(formula = y~x,tree = sim_data$tree,data
 data <- get.aligned.function.data(tip.coefficients)
 
 # estimate evolutionary rates
-rate.mult.fitted <- rate.mult(sim_data$tree,data)
+evo.model.fitted <- evo.model(sim_data$tree,data)
 }
