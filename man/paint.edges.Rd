@@ -27,13 +27,11 @@ Whether or not to return a root edge.
 A matrix of dimension nedge-by-nregimes. NOTE: edges are in postorder.
 }
 \references{
-Paradis E., Claude J. & Strimmer K. 2004. APE: analyses of phylogenetics and evolution in R language. Bioinformatics 20: 289-290.
+Paradis E., Claude J., Strimmer K. 2004. APE: analyses of phylogenetics and evolution in R language. Bioinformatics. 20:289.290.
 
-Pupko, T., Pe'er, I, Shamir, R., and Graur, D. (2000) A fast algorithm for joint reconstruction of ancestral amino acid sequences. Molecular Biology and Evolution, 17, 890–896.
+Pupko T., Pe'er I., Shamir R., Graur D. 2000. A fast algorithm for joint reconstruction of ancestral amino acid sequences. Molecular Biology and Evolution. 17:890-896.
 
-Revell, L. J. (2012) phytools: An R package for phylogenetic comparative biology (and other things). Methods Ecol. Evol., 3, 217-223.
-
-Yang, Z., Kumar, S., Nei, M. (1995) A new method of inference of ancestral nucleotide and amino acid sequences. Genetics, 141, 1641-1650.
+Yang Z., Kumar S., Nei, M. 1995. A new method of inference of ancestral nucleotide and amino acid sequences. Genetics. 141:1641-1650.
 }
 \author{
 Eric W. Goolsby

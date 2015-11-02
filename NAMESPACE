@@ -15,6 +15,16 @@ import(doSNOW)
 import(parallel)
 import(foreach)
 importFrom(phytools, pbtree, starTree, fastBM, matchNodes)
+  importFrom("grDevices", "rgb")
+  importFrom("graphics", "abline", "arrows", "close.screen", "hist",
+             "lines", "par", "plot", "points", "polygon", "screen",
+             "split.screen", "text")
+  importFrom("stats", "BIC", "as.formula", "coef", "complete.cases",
+             "density", "dist", "ecdf", "formula", "glm", "lm",
+             "model.frame", "model.matrix", "optim", "predict",
+             "predict.lm", "quantile", "quasibinomial", "reorder",
+             "rnorm", "runif", "step", "terms")
+  importFrom("utils", "installed.packages")
 export(
   compare.models,
   evo.model,
