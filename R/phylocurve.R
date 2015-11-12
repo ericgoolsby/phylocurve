@@ -2500,7 +2500,11 @@ sim.traits <- function(ntaxa=15,ntraits=4,nreps=1,nmissing=0,tree,v,anc,intraspe
       X[[j]][1:(ntraits*ntaxa)] <- original_X[[j]][1:(ntraits*ntaxa)] <- Xall[,,j]
     } else
     {
-      X[[j]][1:(ntraits*nreps*ntaxa)] <- rnorm(n = ntraits*nreps*ntaxa,mean = rep(Xall[,,j],nreps),sd = rep(intraspecific,nreps))
+      for(jj in 1:nreps)
+      {
+        original_X[[j]] <- Xall[,,j]
+        X[[j]][1:ntaxa + (jj-1)*(ntaxa),] <- rnorm(n = ntraits*ntaxa,mean = Xall[,,j],sd = intraspecific)
+      }
     }
     X[[j]][sample(1:length(X[[j]]),nmissing)] <- NA
     colnames(X[[j]]) <- paste("V",1:ncol(X[[j]]),sep = "")
