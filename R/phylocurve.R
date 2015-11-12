@@ -1,4 +1,118 @@
-prep_multipic <- function(x, phy, scaled = TRUE, var.contrasts = FALSE, rescaled.tree = FALSE)
+ultraFastAnc <- function(phy,x,vars=FALSE,CI=FALSE)
+{
+  original_tree <- reorder(phy,"postorder")
+  if(!is.binary.tree(original_tree)) phy <- reorder(multi2di(phy),"postorder") else
+    phy <- original_tree
+  prep <- prep_multipic(as.matrix(x),phy,rescaled.tree=TRUE,pic_recon=TRUE)
+  pics <- do.call(multipic,prep)
+  nn <- phy$Nnode
+  len_vec <- phy$edge.length
+  nspecies <- length(phy$tip.label)
+  nedge <- length(len_vec)
+  pic_len_vec <- pics$pic_len
+  E <- phy$edge
+  m <- match(phy$edge[,2],phy$edge[,1],nomatch = 0)
+  L <- cbind(m,m)
+  L[m>0,2] <- L[m>0,2] + 1
+  
+  pic_ace <- pics$pic_recon
+  mse <- mean(pics$contrasts^2)
+  ace_hat <- var_hat <- pic_ace
+  var_hat[nspecies+1] <- prod(pic_len_vec[(nedge-1):nedge])/sum(pic_len_vec[(nedge-1):nedge])
+  ret <- C_ultrafast(nedge,L,E,pic_ace,ace_hat,var_hat,len_vec,pic_len_vec)
+  ace_hat <- ret[,1]
+  var_hat <- ret[,2]
+  ret_seq <- (nspecies+1):length(ace_hat)
+  ace_hat <- ace_hat[ret_seq]
+  var_hat <- var_hat[ret_seq]
+  names(ace_hat) <- names(var_hat) <- as.character(1:length(var_hat)+nspecies)
+  var_hat <- mse*var_hat
+  if(!is.binary.tree(original_tree))
+  {
+    ancNames <- matchNodes(original_tree, phy)
+    ace_hat <- ace_hat[as.character(ancNames[,2])]
+    names(ace_hat) <- ancNames[, 1]
+    var_hat <- var_hat[as.character(ancNames[,2])]
+    names(var_hat) <- ancNames[,1]
+  }
+  CI95 <- sqrt(var_hat)*1.96
+  ace_hat_CI95 <- cbind(ace_hat-CI95,ace_hat+CI95)
+  
+  if(!vars & !CI) return(ace_hat)
+  if(CI & !vars) return(list(ace=ace_hat,CI95=ace_hat_CI95))
+  if(vars & !CI) return(list(ace=ace_hat,var=var_hat))
+  return(list(ace=ace_hat,var=var_hat,CI95=ace_hat_CI95))
+}
+
+prep_ultraFastAnc <- function(phy,x,vars=FALSE,CI=FALSE)
+{
+  original_tree <- reorder(phy,"postorder")
+  if(!is.binary.tree(original_tree)) phy <- reorder(multi2di(phy),"postorder") else
+    phy <- original_tree
+  prep <- prep_multipic(as.matrix(x),phy,rescaled.tree=TRUE,pic_recon=TRUE)
+  nn <- phy$Nnode
+  len_vec <- phy$edge.length
+  nspecies <- length(phy$tip.label)
+  nedge <- length(len_vec)
+  pic_len_vec <- len_vec #pics$pic_len
+  E <- phy$edge
+  m <- match(phy$edge[,2],phy$edge[,1],nomatch = 0)
+  L <- cbind(m,m)
+  L[m>0,2] <- L[m>0,2] + 1
+  
+  pic_ace <- matrix(0,nrow=nspecies+tree$Nnode,ncol=1)
+  mse <- 0
+  ace_hat <- var_hat <- pic_ace
+  var_hat[nspecies+1] <- 0
+  multipic_args <- prep
+  ultraFastAnc_args <- list(nedge=nedge,L=L,E=E,pic_ace=pic_ace,ace_hat=ace_hat,var_hat=var_hat,len_vec=len_vec,pic_len_vec=pic_len_vec)
+  return(list(multipic_args=multipic_args,ultraFastAnc_args=ultraFastAnc_args,vars=vars,CI=CI,original_tree=original_tree,phy=phy))
+}
+
+update_ultraFastAnc <- function(new_x,args)
+{
+  original_tree <- args$original_tree
+  phy <- args$phy
+  nedge <- length(args$multipic_args$edge_len)
+  nspecies <- args$multipic_args$ntip
+  vars <- args$vars
+  CI <- args$CI
+  args[[1]]$phe[1:args[[1]]$ntip] <- new_x
+  pics <- do.call(multipic,args[[1]])
+  args[[2]]$pic_ace <- pics$pic_recon
+  mse <- mean(pics$contrasts^2)
+  ace_hat <- var_hat <- pic_ace <- args[[2]]$pic_ace
+  pic_len_vec <- pics$pic_len
+  args[[2]]$var_hat[nspecies+1] <- prod(pic_len_vec[(nedge-1):nedge])/sum(pic_len_vec[(nedge-1):nedge])
+  args[[2]]$ace_hat <- pics$pic_recon
+  args[[2]]$pic_len_vec <- pic_len_vec
+  args[[2]]$pic_ace <- pics$pic_recon
+  ret <- do.call(C_ultrafast,args[[2]])
+  ace_hat <- ret[,1]
+  var_hat <- ret[,2]
+  ret_seq <- (nspecies+1):length(ace_hat)
+  ace_hat <- ace_hat[ret_seq]
+  var_hat <- var_hat[ret_seq]
+  names(ace_hat) <- names(var_hat) <- as.character(1:length(var_hat)+nspecies)
+  var_hat <- mse*var_hat
+  if(!is.binary.tree(original_tree))
+  {
+    ancNames <- matchNodes(original_tree, phy)
+    ace_hat <- ace_hat[as.character(ancNames[,2])]
+    names(ace_hat) <- ancNames[, 1]
+    var_hat <- var_hat[as.character(ancNames[,2])]
+    names(var_hat) <- ancNames[,1]
+  }
+  CI95 <- sqrt(var_hat)*1.96
+  ace_hat_CI95 <- cbind(ace_hat-CI95,ace_hat+CI95)
+  
+  if(!vars & !CI) return(ace_hat)
+  if(CI & !vars) return(list(ace=ace_hat,CI95=ace_hat_CI95))
+  if(vars & !CI) return(list(ace=ace_hat,var=var_hat))
+  return(list(ace=ace_hat,var=var_hat,CI95=ace_hat_CI95))
+}
+
+prep_multipic <- function(x, phy, scaled = TRUE, var.contrasts = FALSE, rescaled.tree = FALSE, pic_recon = FALSE)
 {
   if (!inherits(phy, "phylo")) 
     stop("object 'phy' is not of class \"phylo\"")
@@ -29,10 +143,10 @@ prep_multipic <- function(x, phy, scaled = TRUE, var.contrasts = FALSE, rescaled
   list(ntip=as.integer(nb.tip), nnode=as.integer(nb.node), 
        edge1=as.integer(phy$edge[, 1]), edge2=as.integer(phy$edge[, 2]), 
        edge_len=as.double(phy$edge.length), phe=phenotype, contr=contr, 
-       var_contr=double(phy$Nnode), scaled=as.integer(scaled))
+       var_contr=double(phy$Nnode), scaled=as.integer(scaled), pic_len=as.integer(rescaled.tree), pic_recon=as.integer(pic_recon))
 }
 
-prep_multipic2 <- function(x, phy, edge_len_mat,scaled = TRUE, var.contrasts = FALSE, rescaled.tree = FALSE)
+prep_multipic2 <- function(x, phy, edge_len_mat,scaled = TRUE, var.contrasts = FALSE, rescaled.tree = FALSE, pic_recon=FALSE)
 {
   if (!inherits(phy, "phylo")) 
     stop("object 'phy' is not of class \"phylo\"")
@@ -66,7 +180,7 @@ prep_multipic2 <- function(x, phy, edge_len_mat,scaled = TRUE, var.contrasts = F
   list(ntip=as.integer(nb.tip), nnode=as.integer(nb.node), 
        edge1=as.integer(phy$edge[, 1]), edge2=as.integer(phy$edge[, 2]), 
        edge_len=edge_len_mat, phe=phenotype, contr=contr, 
-       var_contr=matrix(0,phy$Nnode,nvar), scaled=as.integer(scaled))
+       var_contr=matrix(0,phy$Nnode,nvar), scaled=as.integer(scaled), pic_len=as.integer(rescaled.tree), pic_recon=as.integer(pic_recon))
 }
 
 paint.edges <- function(tree,species.groups,average.nodes = TRUE,root.edge = TRUE)

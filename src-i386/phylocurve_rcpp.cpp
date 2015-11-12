@@ -4,9 +4,44 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
+arma::mat C_ultrafast(int nedge,arma::mat L,arma::mat E,arma::vec pic_ace,arma::vec ace_hat,arma::vec var_hat,arma::vec len_vec,arma::vec pic_len_vec)
+{
+  arma::vec tempL = arma::zeros(2);
+  int root_node = 0;
+  double root_val = 0;
+  double var_val = 0;
+  double root_edge = 0;
+  arma::vec es = arma::zeros(2);
+  arma::vec ds = arma::zeros(2);
+  arma::mat ret = arma::zeros(ace_hat.size(),2);
+  int i = 0;
+  for(i=nedge-1;i>=0;i--)
+  {
+    tempL(0) = L(i,0)-1;
+    tempL(1) = L(i,1)-1;
+    if(tempL(0)!=tempL(1))
+    {
+      root_node = E(i,0)-1;
+      root_val = ace_hat(root_node);
+      var_val = var_hat(root_node);
+      root_edge = len_vec(i);
+      es(0) = pic_len_vec(tempL(0));
+      es(1) = pic_len_vec(tempL(1));
+      ds(0) = pic_ace(E(tempL(0),1)-1);
+      ds(1) = pic_ace(E(tempL(1),1)-1);
+      ace_hat(E(i,1)-1) = (es(0)*es(1)*root_val + root_edge*es(1)*ds(0) + root_edge*es(0)*ds(1)) / (es(0)*es(1) + root_edge*es(1) + root_edge*es(0));
+      var_hat(E(i,1)-1) = 1/((-(pic_len_vec(i)*pic_len_vec(i)))/((root_edge-pic_len_vec(i))*(var_val*pic_len_vec(i)+root_edge*pic_len_vec(i)-root_edge*var_val)));
+    }
+  }
+  ret.col(0) = ace_hat;
+  ret.col(1) = var_hat;
+  return ret;
+}
+
+// [[Rcpp::export]]
 List multipic(int ntip, int nnode, arma::vec edge1, arma::vec edge2,
               arma::vec edge_len, arma::mat phe, arma::mat contr,
-              arma::vec var_contr, int scaled)
+              arma::vec var_contr, int scaled, int pic_len, int pic_recon)
 {
   /*  Code adapted from ape package
       Paradis, E. (2012) Analysis of Phylogenetics and
@@ -43,6 +78,22 @@ List multipic(int ntip, int nnode, arma::vec edge1, arma::vec edge2,
   double log_detV = log(1/sum_invV) + sum(log(var_contr));
   arma::rowvec root = phe.row(ntip);
   //Rcout << sum_invV << " " << log_detV;
+  if(pic_len==1 & pic_recon==0)
+  {
+    return List::create(_["contrasts"] = contr,
+                        _["sum_invV"] = sum_invV,
+                        _["log_detV"] = log_detV,
+                        _["root"] = root,
+                        _["pic_len"] = edge_len);
+  } else if(pic_recon==1)
+  {
+    return List::create(_["contrasts"] = contr,
+                        _["sum_invV"] = sum_invV,
+                        _["log_detV"] = log_detV,
+                        _["root"] = root,
+                        _["pic_len"] = edge_len,
+                        _["pic_recon"] = phe);
+  }
   return List::create(_["contrasts"] = contr,
                       _["sum_invV"] = sum_invV,
                       _["log_detV"] = log_detV,
@@ -52,7 +103,7 @@ List multipic(int ntip, int nnode, arma::vec edge1, arma::vec edge2,
 // [[Rcpp::export]]
 List multipic2(int ntip, int nnode, arma::vec edge1, arma::vec edge2,
                arma::mat edge_len, arma::mat phe, arma::mat contr,
-               arma::mat var_contr, int scaled)
+               arma::mat var_contr, int scaled, int pic_len, int pic_recon)
 {
   /*  Code adapted from ape package
       Paradis, E. (2012) Analysis of Phylogenetics and
@@ -90,6 +141,22 @@ List multipic2(int ntip, int nnode, arma::vec edge1, arma::vec edge2,
   arma::rowvec log_detV = log(1/sum_invV) + sum(log(var_contr),0);
   arma::rowvec root = phe.row(ntip);
   //Rcout << sum_invV << " " << log_detV;
+  if(pic_len==1 & pic_recon==0)
+  {
+    return List::create(_["contrasts"] = contr,
+                        _["sum_invV"] = sum_invV,
+                        _["log_detV"] = log_detV,
+                        _["root"] = root,
+                        _["pic_len"] = edge_len);
+  } else if(pic_recon==1)
+  {
+    return List::create(_["contrasts"] = contr,
+                        _["sum_invV"] = sum_invV,
+                        _["log_detV"] = log_detV,
+                        _["root"] = root,
+                        _["pic_len"] = edge_len,
+                        _["pic_recon"] = phe);
+  }
   return List::create(_["contrasts"] = contr,
                       _["sum_invV"] = sum_invV,
                       _["log_detV"] = log_detV,

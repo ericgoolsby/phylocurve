@@ -14,7 +14,7 @@ import(doParallel)
 import(doSNOW)
 import(parallel)
 import(foreach)
-importFrom(phytools, pbtree, starTree, fastBM, matchNodes)
+importFrom(phytools, pbtree, starTree, fastBM, matchNodes, fastAnc)
   importFrom("grDevices", "rgb")
   importFrom("graphics", "abline", "arrows", "close.screen", "hist",
              "lines", "par", "plot", "points", "polygon", "screen",
@@ -44,7 +44,8 @@ export(
   phylocurve.trim,
   polynomial.fit,
   sim.curves,
-  sim.traits
+  sim.traits,
+  ultraFastAnc
        )
 S3method(plot, compare.model)
 S3method(print, compare.model)
