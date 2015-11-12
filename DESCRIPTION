@@ -1,6 +1,6 @@
 Package: phylocurve
-Version: 2.0.0
-Date: 2015-06-14
+Version: 2.0.1
+Date: 2015-11-11
 Title: Phylogenetic Comparative Methods for High-Dimensional Traits
 Author: Eric W. Goolsby
 Maintainer: Eric W. Goolsby <eric.goolsby.evolution@gmail.com>

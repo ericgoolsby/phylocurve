@@ -60,7 +60,7 @@ prep_ultraFastAnc <- function(phy,x,vars=FALSE,CI=FALSE)
   L <- cbind(m,m)
   L[m>0,2] <- L[m>0,2] + 1
   
-  pic_ace <- matrix(0,nrow=nspecies+tree$Nnode,ncol=1)
+  pic_ace <- matrix(0,nrow=nspecies+phy$Nnode,ncol=1)
   mse <- 0
   ace_hat <- var_hat <- pic_ace
   var_hat[nspecies+1] <- 0

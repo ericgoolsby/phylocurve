@@ -78,7 +78,7 @@ List multipic(int ntip, int nnode, arma::vec edge1, arma::vec edge2,
   double log_detV = log(1/sum_invV) + sum(log(var_contr));
   arma::rowvec root = phe.row(ntip);
   //Rcout << sum_invV << " " << log_detV;
-  if(pic_len==1 & pic_recon==0)
+  if((pic_len==1) & (pic_recon==0))
   {
     return List::create(_["contrasts"] = contr,
                         _["sum_invV"] = sum_invV,
@@ -141,7 +141,7 @@ List multipic2(int ntip, int nnode, arma::vec edge1, arma::vec edge2,
   arma::rowvec log_detV = log(1/sum_invV) + sum(log(var_contr),0);
   arma::rowvec root = phe.row(ntip);
   //Rcout << sum_invV << " " << log_detV;
-  if(pic_len==1 & pic_recon==0)
+  if((pic_len==1) & (pic_recon==0))
   {
     return List::create(_["contrasts"] = contr,
                         _["sum_invV"] = sum_invV,
@@ -173,7 +173,7 @@ double logdet(arma::mat A)
 }
 
 // [[Rcpp::export]]
-double Rinv4(int nspecies,int nedge,int ngroups,arma::uvec ind,arma::vec len_vec,
+double Rinv4(unsigned int nspecies,int nedge,int ngroups,arma::uvec ind,arma::vec len_vec,
              arma::uvec anc,arma::uvec des,arma::vec R,arma::mat painted_edges,arma::mat phylocovs,int REML)
 {
   int nvar = 2;
@@ -250,7 +250,7 @@ double Rinv4(int nspecies,int nedge,int ngroups,arma::uvec ind,arma::vec len_vec
 }
 
 // [[Rcpp::export]]
-double Rinv6(int nspecies,int nedge,int ngroups,arma::uvec ind,arma::vec len_vec,
+double Rinv6(unsigned int nspecies,int nedge,int ngroups,arma::uvec ind,arma::vec len_vec,
              arma::uvec anc,arma::uvec des,arma::mat L,arma::vec R,arma::mat painted_edges,arma::mat phylocovs,int REML)
 {
   int nvar = phylocovs.n_cols;
@@ -358,7 +358,7 @@ double Rinv6(int nspecies,int nedge,int ngroups,arma::uvec ind,arma::vec len_vec
 }
 
 // [[Rcpp::export]]
-arma::mat theta_Rinv6(int nspecies,int nedge,int ngroups,arma::uvec ind,arma::vec len_vec,
+arma::mat theta_Rinv6(unsigned int nspecies,int nedge,int ngroups,arma::uvec ind,arma::vec len_vec,
                       arma::uvec anc,arma::uvec des,arma::mat L,arma::vec R,arma::mat painted_edges,arma::mat phylocovs,int REML)
 {
   int nvar = phylocovs.n_cols;
@@ -456,7 +456,7 @@ arma::mat theta_Rinv6(int nspecies,int nedge,int ngroups,arma::uvec ind,arma::ve
 // [[Rcpp::export]]
 arma::mat fast_transform(arma::mat m)
 {
-  int i = 0;
+  unsigned int i = 0;
   arma::vec eigval;
   arma::mat eigvec;
   arma::eig_sym(eigval, eigvec, m, "dc");

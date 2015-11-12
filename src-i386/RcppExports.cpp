@@ -78,12 +78,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // Rinv4
-double Rinv4(int nspecies, int nedge, int ngroups, arma::uvec ind, arma::vec len_vec, arma::uvec anc, arma::uvec des, arma::vec R, arma::mat painted_edges, arma::mat phylocovs, int REML);
+double Rinv4(unsigned int nspecies, int nedge, int ngroups, arma::uvec ind, arma::vec len_vec, arma::uvec anc, arma::uvec des, arma::vec R, arma::mat painted_edges, arma::mat phylocovs, int REML);
 RcppExport SEXP phylocurve_Rinv4(SEXP nspeciesSEXP, SEXP nedgeSEXP, SEXP ngroupsSEXP, SEXP indSEXP, SEXP len_vecSEXP, SEXP ancSEXP, SEXP desSEXP, SEXP RSEXP, SEXP painted_edgesSEXP, SEXP phylocovsSEXP, SEXP REMLSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< int >::type nspecies(nspeciesSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type nspecies(nspeciesSEXP);
     Rcpp::traits::input_parameter< int >::type nedge(nedgeSEXP);
     Rcpp::traits::input_parameter< int >::type ngroups(ngroupsSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type ind(indSEXP);
@@ -99,12 +99,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // Rinv6
-double Rinv6(int nspecies, int nedge, int ngroups, arma::uvec ind, arma::vec len_vec, arma::uvec anc, arma::uvec des, arma::mat L, arma::vec R, arma::mat painted_edges, arma::mat phylocovs, int REML);
+double Rinv6(unsigned int nspecies, int nedge, int ngroups, arma::uvec ind, arma::vec len_vec, arma::uvec anc, arma::uvec des, arma::mat L, arma::vec R, arma::mat painted_edges, arma::mat phylocovs, int REML);
 RcppExport SEXP phylocurve_Rinv6(SEXP nspeciesSEXP, SEXP nedgeSEXP, SEXP ngroupsSEXP, SEXP indSEXP, SEXP len_vecSEXP, SEXP ancSEXP, SEXP desSEXP, SEXP LSEXP, SEXP RSEXP, SEXP painted_edgesSEXP, SEXP phylocovsSEXP, SEXP REMLSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< int >::type nspecies(nspeciesSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type nspecies(nspeciesSEXP);
     Rcpp::traits::input_parameter< int >::type nedge(nedgeSEXP);
     Rcpp::traits::input_parameter< int >::type ngroups(ngroupsSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type ind(indSEXP);
@@ -121,12 +121,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // theta_Rinv6
-arma::mat theta_Rinv6(int nspecies, int nedge, int ngroups, arma::uvec ind, arma::vec len_vec, arma::uvec anc, arma::uvec des, arma::mat L, arma::vec R, arma::mat painted_edges, arma::mat phylocovs, int REML);
+arma::mat theta_Rinv6(unsigned int nspecies, int nedge, int ngroups, arma::uvec ind, arma::vec len_vec, arma::uvec anc, arma::uvec des, arma::mat L, arma::vec R, arma::mat painted_edges, arma::mat phylocovs, int REML);
 RcppExport SEXP phylocurve_theta_Rinv6(SEXP nspeciesSEXP, SEXP nedgeSEXP, SEXP ngroupsSEXP, SEXP indSEXP, SEXP len_vecSEXP, SEXP ancSEXP, SEXP desSEXP, SEXP LSEXP, SEXP RSEXP, SEXP painted_edgesSEXP, SEXP phylocovsSEXP, SEXP REMLSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< int >::type nspecies(nspeciesSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type nspecies(nspeciesSEXP);
     Rcpp::traits::input_parameter< int >::type nedge(nedgeSEXP);
     Rcpp::traits::input_parameter< int >::type ngroups(ngroupsSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type ind(indSEXP);
