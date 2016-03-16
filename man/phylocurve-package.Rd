@@ -5,14 +5,14 @@
 Phylogenetic Comparative Methods for Function-Valued and Other High-Dimensional Traits
 }
 \description{
-Tools for studying the evolution of function-valued traits (as well as other high-dimensional traits) including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated trait evolution.
+Tools for studying the evolution of high-dimensional traits (in particular, function-valued traits), including ancestral state reconstruction, estimating phylogenetic signal, and assessing correlated trait evolution.
 }
 \details{
 \tabular{ll}{
 Package: \tab phylocurve\cr
 Type: \tab Package\cr
-Version: \tab 1.3.0\cr
-Date: \tab 2015-06-14\cr
+Version: \tab 2.0.2\cr
+Date: \tab 2016-03-15\cr
 License: \tab GPL (>= 2)\cr
 }
 
@@ -49,9 +49,9 @@ sim_data <- sim.curves()
 anc_recon <- phylocurve(y~x,tree = sim_data$tree,data = sim_data$data)
 
 # get tip coefficients and aligned function data
-tip_coefficients <- get_tip_coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
-data <- get_aligned_function_data(tip_coefficients)
+tip_coefficients <- get.tip.coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
+data <- get.aligned.function.data(tip_coefficients)
 
 # estimate evolutionary rates
-rate.mult.fitted <- rate.mult(sim_data$tree,data)
+evo.model.fitted <- evo.model(sim_data$tree,data)
 }

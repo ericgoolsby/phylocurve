@@ -57,8 +57,4 @@ curve_data <- nonlinear.fit(data = sim_data$data,x_variable = "x",y_variable = "
 # Align curve data using dynamic time warping
 # NOT RUN (takes several minutes)
 # P <- phylocurve.generalized(tree = sim_data$tree,X = curve_data$X,Y = curve_data$Y)
-
-# Perform comparative analyses on aligned curves
-# rate.mult.fitted <- rate.mult(tree = P$tree,Y = P$aligned_data)
-# K.mult(rate.mult.fitted) 
 }

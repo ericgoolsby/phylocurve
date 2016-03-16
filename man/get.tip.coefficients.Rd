@@ -1,5 +1,5 @@
-\name{get_tip_coefficients}
-\alias{get_tip_coefficients}
+\name{get.tip.coefficients}
+\alias{get.tip.coefficients}
 \title{
 Estimate regression coefficients for tip species curves
 }
@@ -7,8 +7,8 @@ Estimate regression coefficients for tip species curves
 Estiamtes regression coefficients for tip species curves from raw data. May be useful if wanting to perform methods without first performing ancestral curve reconstruction via the phylocurve() function.
 }
 \usage{
-get_tip_coefficients(formula, tree, data, ymin = 0.01, ymax = 0.99,
-ylength = 30, species_identifier = "species", verbose = FALSE)
+get.tip.coefficients(formula, tree, data, ymin = 0.01, ymax = 0.99,
+ylength = 30, species.identifier = "species", verbose = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -30,7 +30,7 @@ Because 0 and 1 are undefined for inverse logit functions, the minimum and maxim
   \item{ylength}{
 How many landmarks (points on the curve) to evaluate.
 }
-  \item{species_identifier}{
+  \item{species.identifier}{
 Default is "species". Can be changed if the column in data has a different species identifier name.
 }
   \item{verbose}{
@@ -45,9 +45,9 @@ Estimated regression coefficients of tip curves.
 sim_data <- sim.curves()
 
 # get tip coefficients and aligned function data
-tip_coefficients <- get_tip_coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
-data <- get_aligned_function_data(tip_coefficients)
+tip.coefficients <- get.tip.coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
+data <- get.aligned.function.data(tip.coefficients)
 
 # estimate evolutionary rates
-rate.mult.fitted <- rate.mult(sim_data$tree,data)
+evo.model.fitted <- evo.model(sim_data$tree,data)
 }

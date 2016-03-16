@@ -1,30 +1,54 @@
+useDynLib(phylocurve)
+importFrom(Rcpp, evalCpp)
 import(ape)
-import(phytools)
-import(phylolm)
-import(geiger)
-import(abind)
-import(GPfit)
-import(dtw)
 import(drc)
-export(compare.multivar.rate.mult,
-       compare.rate.mult,
-       K.mult,
-       get_aligned_function_data,
-       get_tip_coefficients,
-       GP.fit,
-       nonlinear.fit,
-       pgls.mult,
-       phylocurve,
-       phylocurve.generalized,
-       phylocurve.trim,
-       polynomial.fit,
-       rate.mult,
-       sim.mult,
-       sim.curves,
-       
-       print.lr.test,
-       print.rate.mult
+import(dtw)
+import(geiger)
+import(geomorph)
+import(GPfit)
+importFrom(Matrix, nearPD)
+import(mvnmle)
+import(phylolm)
+import(rgl)
+import(doParallel)
+import(doSNOW)
+import(parallel)
+import(foreach)
+importFrom(phytools, pbtree, starTree, fastBM, matchNodes, fastAnc)
+  importFrom("grDevices", "rgb")
+  importFrom("graphics", "abline", "arrows", "close.screen", "hist",
+             "lines", "par", "plot", "points", "polygon", "screen",
+             "split.screen", "text")
+  importFrom("stats", "BIC", "as.formula", "coef", "complete.cases",
+             "density", "dist", "ecdf", "formula", "glm", "lm",
+             "model.frame", "model.matrix", "optim", "predict",
+             "predict.lm", "quantile", "quasibinomial", "reorder",
+             "rnorm", "runif", "step", "terms")
+  importFrom("utils", "installed.packages")
+export(
+  compare.models,
+  evo.model,
+  fast.geomorph.compare.evol.rates,
+  fast.geomorph.physignal,
+  fast.geomorph.compare.multi.evol.rates,
+  fast.geomorph.phylo.integration,
+  fast.geomorph.procD.pgls,
+  get.aligned.function.data,
+  get.tip.coefficients,
+  GP.fit,
+  K.mult,
+  multipic,
+  nonlinear.fit,
+  paint.edges,
+  phylocurve,
+  phylocurve.generalized,
+  phylocurve.trim,
+  polynomial.fit,
+  prep_multipic,
+  sim.curves,
+  sim.traits,
+  ultraFastAnc
        )
-
-S3method(print, rate.mult)
-S3method(print, lr.test)
+S3method(plot, compare.model)
+S3method(print, compare.model)
+S3method(print, evo.model)

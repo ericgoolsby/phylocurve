@@ -1,5 +1,5 @@
-\name{get_aligned_function_data}
-\alias{get_aligned_function_data}
+\name{get.aligned.function.data}
+\alias{get.aligned.function.data}
 \title{
 Estimate aligned data for function-valued traits
 }
@@ -7,10 +7,10 @@ Estimate aligned data for function-valued traits
 Estiamtes function data for tip species curves from tip coefficients.
 }
 \usage{
-get_aligned_function_data(tip_coefficients, ylength, ymin = 0.01, ymax = 0.99)
+get.aligned.function.data(tip.coefficients, ylength, ymin = 0.01, ymax = 0.99)
 }
 \arguments{
-  \item{tip_coefficients}{
+  \item{tip.coefficients}{
 Matrix of estimated regression coefficients of tip curves. Row names should correspond to species names. The first column should contain the logit glm intercept; the second column contains the logit glm slope.
 }
   \item{ylength}{
@@ -37,9 +37,9 @@ Eric W. Goolsby
 sim_data <- sim.curves()
 
 # get tip coefficients and aligned function data
-tip_coefficients <- get_tip_coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
-data <- get_aligned_function_data(tip_coefficients)
+tip.coefficients <- get.tip.coefficients(formula = y~x,tree = sim_data$tree,data = sim_data$data)
+data <- get.aligned.function.data(tip.coefficients)
 
 # estimate evolutionary rates
-rate.mult.fitted <- rate.mult(sim_data$tree,data)
+evo.model.fitted <- evo.model(sim_data$tree,data)
 }
