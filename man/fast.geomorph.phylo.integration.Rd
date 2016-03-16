@@ -1,14 +1,14 @@
-\name{fast.geomorph.phylo.pls}
-\alias{fast.geomorph.phylo.pls}
+\name{fast.geomorph.phylo.integration}
+\alias{fast.geomorph.phylo.integration}
 \title{
 Fast covariance-based implementations of distance-based methods
 }
 \description{
-The functions \code{fast.geomorph.compare.evol.rates}, \code{fast.geomorph.compare.multi.evol.rates}, \code{fast.geomorph.phylo.pls}, \code{fast.geomorph.procD.pgls}
-, and \code{fast.geomorph.physignal} are covariance-baesd implementations of the geomorph functions \link[geomorph]{compare.evol.rates}, \link[geomorph]{compare.multi.evol.rates}, \link[geomorph]{phylo.pls}, \link[geomorph]{procD.pgls}, and \link[geomorph]{physignal} using a fast linear-time algorithm. Code is directly modified from the original geomorph code for direct comparison between distance-based and covariance-based methods.
+The functions \code{fast.geomorph.compare.evol.rates}, \code{fast.geomorph.compare.multi.evol.rates}, \code{fast.geomorph.phylo.integration}, \code{fast.geomorph.procD.pgls}
+, and \code{fast.geomorph.physignal} are covariance-baesd implementations of the geomorph functions \link[geomorph]{compare.evol.rates}, \link[geomorph]{compare.multi.evol.rates}, \link[geomorph]{phylo.integration}, \link[geomorph]{procD.pgls}, and \link[geomorph]{physignal} using a fast linear-time algorithm. Code is directly modified from the original geomorph code for direct comparison between distance-based and covariance-based methods.
 }
 \usage{
-fast.geomorph.phylo.pls(A1, A2, phy, iter = 999,
+fast.geomorph.phylo.integration(A1, A2, phy, iter = 999,
 label = NULL, verbose = FALSE, ShowPlot = TRUE)
 }
 \arguments{
@@ -35,10 +35,10 @@ From geomorph: A logical value indicating whether or not the plot should be retu
 }
 }
 \details{
-See \code{phylo.pls}
+See \code{phylo.integration}
 }
 \value{
-See \code{phylo.pls}
+See \code{phylo.integration}
 }
 \references{
 Goolsby E.W. 2016. Likelihood-Based Parameter Estimation for High-Dimensional Phylogenetic Comparative Models: Overcoming the Limitations of 'Distance-Based' Methods. In review.
@@ -49,7 +49,7 @@ Adams, D.C. and R. Felice. 2014. Assessing phylogenetic morphological integratio
 Eric W. Goolsby
 }
 \seealso{
-\link[geomorph]{phylo.pls}
+\link[geomorph]{phylo.integration}
 }
 \examples{
 ### NOTE: this example is identical 
@@ -61,6 +61,8 @@ require(geomorph)
 data(plethspecies)
 Y.gpa<-gpagen(plethspecies$land)    #GPA-alignment
 
-phylo.pls(Y.gpa$coords[1:5,,],Y.gpa$coords[6:11,,],plethspecies$phy,iter=99)
-fast.geomorph.phylo.pls(Y.gpa$coords[1:5,,],Y.gpa$coords[6:11,,],plethspecies$phy)
+# NOTE: phylo.integration is phylo.integration in newer versions of geomorph
+# phylo.integration(Y.gpa$coords[1:5,,],Y.gpa$coords[6:11,,],plethspecies$phy,iter=99)
+# phylo.integration(Y.gpa$coords[1:5,,],Y.gpa$coords[6:11,,],plethspecies$phy,iter=99)
+fast.geomorph.phylo.integration(Y.gpa$coords[1:5,,],Y.gpa$coords[6:11,,],plethspecies$phy)
 }

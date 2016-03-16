@@ -452,7 +452,7 @@ fasterAnc <- function(tree, x, vars = FALSE, CI = FALSE)
   else return(result)
 }
 
-fast.geomorph.phylo.pls <- function (A1, A2, phy, iter = 999, label = NULL, 
+fast.geomorph.phylo.integration <- function (A1, A2, phy, iter = 999, label = NULL, 
                             verbose = FALSE, ShowPlot = TRUE) 
 {
   phy <- reorder(multi2di(phy),"postorder")

@@ -60,10 +60,10 @@ data(plethspecies)
 Y.gpa<-gpagen(plethspecies$land)    #GPA-alignment
 
 #Test for phylogenetic signal in shape
-physignal(plethspecies$phy,Y.gpa$coords,method="Kmult",iter=99)
+physignal(phy=plethspecies$phy,Y.gpa$coords,iter=99)
 fast.geomorph.physignal(plethspecies$phy,Y.gpa$coords,method="Kmult")
 
 #Test for phylogenetic signal in size
-physignal(plethspecies$phy,Y.gpa$Csize,method="Kmult",iter=99)
+physignal(phy=plethspecies$phy,Y.gpa$Csize,iter=99)
 fast.geomorph.physignal(plethspecies$phy,Y.gpa$Csize,method="Kmult")
 }

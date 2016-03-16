@@ -70,10 +70,10 @@ Y.gpa<-gpagen(plethspecies$land)    #GPA-alignment
  names(gp.end)<-plethspecies$phy$tip
 
 #Calculate rates of shape
-compare.evol.rates(plethspecies$phy,Y.gpa$coords,gp=gp.end,iter=49)
+compare.evol.rates(phy=plethspecies$phy,Y.gpa$coords,gp=gp.end,iter=49)
 fast.geomorph.compare.evol.rates(plethspecies$phy,Y.gpa$coords,gp=gp.end)
 
 #Calculate rates of size
-compare.evol.rates(plethspecies$phy,Y.gpa$Csize,gp=gp.end,iter=49)
+compare.evol.rates(phy=plethspecies$phy,Y.gpa$Csize,gp=gp.end,iter=49)
 fast.geomorph.compare.evol.rates(plethspecies$phy,Y.gpa$Csize,gp=gp.end,iter=49)
 }

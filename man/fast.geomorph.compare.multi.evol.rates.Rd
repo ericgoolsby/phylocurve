@@ -64,6 +64,6 @@ data(plethspecies)
 Y.gpa<-gpagen(plethspecies$land)    #GPA-alignment
 land.gp<-c("A","A","A","A","A","B","B","B","B","B","B")  #mandible and cranium subsets
 
-compare.multi.evol.rates(Y.gpa$coords,land.gp,plethspecies$phy,iter=99)
+compare.multi.evol.rates(Y.gpa$coords,land.gp,phy=plethspecies$phy,iter=99)
 fast.geomorph.compare.multi.evol.rates(Y.gpa$coords,land.gp,plethspecies$phy)
 }
