@@ -870,7 +870,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
     if(model!="BM") if((model=="OUfixedRoot" | model=="OUrandomRoot") & !is.ultrametric(tree) & nrates.species>1) stop("Non-ultrametric trees not currently supported for OU model with multiple species groups.") 
     dis <- pruningwise.distFromRoot(reorder(tree,"pruningwise"))[1:nspecies]
     Tmax <- mean(dis)
-    bounds.default <- matrix(c(1e-7/Tmax,50/Tmax,1e-7/Tmax,50/Tmax,1e-7,1,1e-6,1,1e-5,3,-3/Tmax,0), ncol=2, byrow=TRUE)
+    bounds.default <- matrix(c(1e-7/Tmax,max(50/Tmax,5),1e-7/Tmax,max(50/Tmax,5),1e-7,1,1e-6,1,1e-5,3,min(-4,-3/Tmax),0), ncol=2, byrow=TRUE)
     rownames(bounds.default) <- c("alpha","alpha","lambda","kappa","delta","rate")
     colnames(bounds.default) <- c("min","max")
     starting.values.default <- c(0.5/Tmax,0.5/Tmax,0.5,0.5,0.5,-1/Tmax)
@@ -905,13 +905,14 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
       if(model!="EB") par <- exp(par)
       if(model=="OUrandomRoot" | model=="OUfixedRoot" | model=="OU")
       {
-        temp_args$parameters[[1]] <- par
+        temp_args$parameters <- list(alpha=par)
         temp_tree <- do.call(transf.branch.lengths,temp_args)$tree
       } else
       {
         geiger_args[[3]] <- par
         temp_tree <- do.call(rescale,geiger_args)
       }
+      temp_tree <- reorder(temp_tree,"postorder")
       if(!binary) temp_ditree <- multi2di(temp_tree,random=FALSE) else temp_ditree <- temp_tree
       ret <- try(simple_BM(temp_tree = temp_tree,ditree = temp_ditree,ret_pars = ret_pars),silent=TRUE)
       if(class(ret)=="try-error") return(-.Machine$double.xmax) else return(ret)
