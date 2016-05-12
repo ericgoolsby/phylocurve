@@ -10,7 +10,7 @@ This function fits the evolutionary model as specified (e.g., trait groups, BM/E
 evo.model(tree, Y, fixed.effects = NA, species.groups, trait.groups,
 model = "BM", diag.phylocov = FALSE, method = "Pairwise REML",
 force.zero.phylocov = character(), species.id = "species",
-max.combn = 10000, painted.edges, ret.level = 2, plot.LL.surface = TRUE,
+max.combn = 10000, painted.edges, ret.level = 2, plot.LL.surface = FALSE,
 par.init.iters = 50, fixed.par = numeric(), multirate = FALSE, subset = TRUE)
 }
 \arguments{
@@ -54,7 +54,7 @@ Optional. An nedge-by-nspecies.groups matrix corresponding to the proportion of 
 Default = 2. The level of information to return. ret.level = 1 only returns the log-likelihood; ret.level = 2 returns most information but not the evolutionary rate matrix. ret.level = 3 returns most information including the evolutionary matrix.
 }
   \item{plot.LL.surface}{
-Default = TRUE. Whether to plot the log-likelihood surface when estimating tree transformation parameters (i.e. OU, EB, lambda, delta, or kappa).
+Default = FALSE. Whether to plot the log-likelihood surface when estimating tree transformation parameters (i.e. OU, EB, lambda, delta, or kappa).
 }
   \item{par.init.iters}{
 Default = 50. The number of values to evaluate along the feasible range of tree transformations parameters (not applicable if model='BM').

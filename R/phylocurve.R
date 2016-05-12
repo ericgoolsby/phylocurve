@@ -408,7 +408,7 @@ print.evo.model <- function(x,...)
 evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
                       model="BM", diag.phylocov=FALSE, method = "Pairwise REML", 
                       force.zero.phylocov=character(), species.id = "species", max.combn = 10000, painted.edges,
-                      ret.level = 2, plot.LL.surface = TRUE, par.init.iters = 50, fixed.par = numeric(),
+                      ret.level = 2, plot.LL.surface = FALSE, par.init.iters = 50, fixed.par = numeric(),
                       multirate = FALSE,subset=TRUE)
   # ret.level: 1=logL only, 2=multi rates, 3=full rates
 {
@@ -1435,11 +1435,11 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
 sim.model <- function(model,nsim=1000,return.type="matrix")
 {
   FLAG <- FALSE
-  if(nsim==1)
-  {
-    FLAG <- TRUE
-    nsim <- 2
-  }
+  #if(nsim==1)
+  #{
+  #  FLAG <- TRUE
+  #  nsim <- 2
+  #}
   model1 <- model
   model1SAVE <- model1
   perm_fixed_par_1 <- model1$evo.model.args
@@ -1507,6 +1507,7 @@ sim.model <- function(model,nsim=1000,return.type="matrix")
 
 compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE,parallel=TRUE,conf.int=TRUE)
 {
+  if(nsim<2) parallel <- FALSE
   model1SAVE <- model1
   model2SAVE <- model2
   perm_fixed_par_1 <- model1$evo.model.args
@@ -1528,6 +1529,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       model1 <- do.call(what = evo.model,args = args)
     } else model1 <- do.call(what = evo.model,args = args)
   }
+  if(model1$evo.model.args$model!="BM") model1$evo.model.args$fixed.par <- model1$model.par
   if(is.null(model2$phylocov))
   {
     args <- model2$evo.model.args
@@ -1541,6 +1543,8 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       model2 <- do.call(what = evo.model,args = args)
     } else model2 <- do.call(what = evo.model,args = args)
   }
+  if(model2$evo.model.args$model!="BM") model2$evo.model.args$fixed.par <- model2$model.par
+  
   tree <- model1$evo.model.args$tree
   fixed_effect_1 <- fixed_effect_2 <- rep(list(NA),nsim)
   if(is.list(model1$phylocov))
@@ -1872,7 +1876,7 @@ sim.groups <- function(tree,groups,painted.edges,model="BM",parameters=list(),ph
   }
   if(return.type!="matrix") for(j in 1:nsim) Y[[j]] <- data.frame(species=rownames(Y[[j]]),Y[[j]])
   tree <- reorder(tree,"postorder")
-  if(nsim==1) Y <- Y[[j]]
+  #if(nsim==1) Y <- Y[[j]]
   list(trait_data=Y,tree=tree)
   
 }
@@ -2479,11 +2483,12 @@ sim.traits <- function(ntaxa=15,ntraits=4,nreps=1,nmissing=0,tree,v,anc,intraspe
   anc_mat <- matrix(1,ntaxa) %*% anc
   Xall <- sim.char(phy = tree,par = v,nsim = nsim)
   colnames(Xall) <- paste("V",1:ntraits,sep="")
-  if(nreps==1 & nmissing==0 & nsim==1)
-  {
-    if(return.type=="matrix") return(list(trait_data=Xall[,,1],tree=perm_tree,sim_tree=tree)) else
-      return(list(trait_data=data.frame(species=rownames(Xall[,,1]),Xall[,,1]),tree=perm_tree,sim_tree=tree))
-  } else if(nreps==1 & nmissing==0) 
+  #if(nreps==1 & nmissing==0 & nsim==1)
+  #{
+  #  if(return.type=="matrix") return(list(trait_data=Xall[,,1,drop=FALSE],tree=perm_tree,sim_tree=tree)) else
+  #    return(list(trait_data=data.frame(species=rownames(Xall[,,1,drop=FALSE]),Xall[,,1]),tree=perm_tree,sim_tree=tree))
+  #} else 
+    if(nreps==1 & nmissing==0) 
   {
     if(return.type=="matrix")
     {
@@ -2514,6 +2519,6 @@ sim.traits <- function(ntaxa=15,ntraits=4,nreps=1,nmissing=0,tree,v,anc,intraspe
     X[[j]] <- data.frame(species=species,X[[j]])
     if(nreps==1) rownames(X[[j]]) <- species
   }
-  if(nsim==1) list(trait_data=X[[1]],tree=perm_tree,sim_tree=tree,original_X=original_X[[1]]) else
+  #if(nsim==1) list(trait_data=X[[1]],tree=perm_tree,sim_tree=tree,original_X=original_X[[1]]) else
     list(trait_data=X,tree=perm_tree,sim_tree=tree,original_X=original_X)
 }
