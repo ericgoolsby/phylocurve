@@ -737,8 +737,8 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
           YANC <- a_results$root[1,]
           XX <- crossprod(cbind(0,x)) + tcrossprod(c(1,XANC))*suminvV_and_logdV[1]
           betas <- solve(crossprod(x),crossprod(x,a))
-          BETAS <- solve(XX,XY)
           XY <- crossprod(cbind(0,x),a) + tcrossprod(c(1,XANC),YANC)*suminvV_and_logdV[1]
+          BETAS <- solve(XX,XY)
           C <- crossprod(a-x%*%betas) / (nspecies-REML)
           anc <- X1%*%BETAS
         } else
@@ -1444,7 +1444,7 @@ sim.model <- function(model,nsim=1000,return.type="matrix")
   model1SAVE <- model1
   perm_fixed_par_1 <- model1$evo.model.args
   nvar <- ncol(model1$evo.model.args$Y)
-  if(is.null(model1$phylocov))
+  if(is.null(model1$phylocov) | TRUE)
   {
     args <- model1$evo.model.args
     args$ret.level <- 3
@@ -1529,8 +1529,8 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       model1 <- do.call(what = evo.model,args = args)
     } else model1 <- do.call(what = evo.model,args = args)
   }
-  if(model1$evo.model.args$model!="BM") model1$evo.model.args$fixed.par <- model1$model.par
-  if(is.null(model2$phylocov))
+  #if(model1$evo.model.args$model!="BM") model1$evo.model.args$fixed.par <- model1$model.par
+  if(is.null(model2$phylocov) | TRUE)
   {
     args <- model2$evo.model.args
     args$ret.level <- 3
@@ -1543,7 +1543,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       model2 <- do.call(what = evo.model,args = args)
     } else model2 <- do.call(what = evo.model,args = args)
   }
-  if(model2$evo.model.args$model!="BM") model2$evo.model.args$fixed.par <- model2$model.par
+  #if(model2$evo.model.args$model!="BM") model2$evo.model.args$fixed.par <- model2$model.par
   
   tree <- model1$evo.model.args$tree
   fixed_effect_1 <- fixed_effect_2 <- rep(list(NA),nsim)
