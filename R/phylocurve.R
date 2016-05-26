@@ -1245,9 +1245,15 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
   sim_null <- sim.model(model = null_model,nsim = nsim)
   sim_alt <- sim.model(model = model,nsim = nsim)
   
+  if(nsim==1)
+  {
+    sim_null$trait_data <- list(sim_null$trait_data)
+    sim_alt$trait_data <- list(sim_alt$trait_data)
+  }
+  
   args <- model$evo.model.args
   args$ret.level <- 3
-  if(args$model!="BM") args$fixed.par <- model1$model.par
+  if(args$model!="BM") args$fixed.par <- model$model.par
   model1 <- do.call(what = evo.model,args = args)
   
   BMtree <- model$evo.model.args$tree
@@ -1435,11 +1441,11 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
 sim.model <- function(model,nsim=1000,return.type="matrix")
 {
   FLAG <- FALSE
-  #if(nsim==1)
-  #{
-  #  FLAG <- TRUE
-  #  nsim <- 2
-  #}
+  if(nsim==1)
+  {
+    FLAG <- TRUE
+    nsim <- 2
+  }
   model1 <- model
   model1SAVE <- model1
   perm_fixed_par_1 <- model1$evo.model.args
@@ -1495,7 +1501,7 @@ sim.model <- function(model,nsim=1000,return.type="matrix")
       colnames(sim1$trait_data[[i]]) <- c(model1SAVE$evo.model.args$species.id,colnames(model1SAVE$evo.model.args$Y))
   }
   
-  if(FLAG) sim1$trait_data <- sim1$trait_data[1]
+  if(nsim==1) sim1$trait_data <- sim1$trait_data[[1]]
   if(class(perm_fixed_par_1$fixed.effects)=="matrix")
   {
     return(list(trait_data=sim1$trait_data,fixed_effects=fixed_effect_1))
@@ -1562,6 +1568,8 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
                                         as.list(model1$evo.model.args$fixed.par),nsim=nsim)
   }
   
+  if(nsim==1) sim1$trait_data <- list(sim1$trait_data)
+  
   if(class(perm_fixed_par_1$fixed.effects)=="matrix")
   {
     for(i in 1:nsim)
@@ -1587,6 +1595,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
                                         parameters=if(model2$evo.model.args$model=="BM") list("BM") else as.list(model2$evo.model.args$fixed.par),nsim=nsim)
       
     }
+    if(nsim==1) sim2$trait_data <- list(sim2$trait_data)
     if(class(perm_fixed_par_2$fixed.effects)=="matrix")
     {
       for(i in 1:nsim)
@@ -2483,12 +2492,12 @@ sim.traits <- function(ntaxa=15,ntraits=4,nreps=1,nmissing=0,tree,v,anc,intraspe
   anc_mat <- matrix(1,ntaxa) %*% anc
   Xall <- sim.char(phy = tree,par = v,nsim = nsim)
   colnames(Xall) <- paste("V",1:ntraits,sep="")
-  #if(nreps==1 & nmissing==0 & nsim==1)
-  #{
-  #  if(return.type=="matrix") return(list(trait_data=Xall[,,1,drop=FALSE],tree=perm_tree,sim_tree=tree)) else
-  #    return(list(trait_data=data.frame(species=rownames(Xall[,,1,drop=FALSE]),Xall[,,1]),tree=perm_tree,sim_tree=tree))
-  #} else 
-    if(nreps==1 & nmissing==0) 
+  if(nreps==1 & nmissing==0 & nsim==1)
+  {
+    if(return.type=="matrix") return(list(trait_data=as.matrix(Xall[,,1]),tree=perm_tree,sim_tree=tree)) else
+      return(list(trait_data=data.frame(species=rownames(Xall[,,1,drop=FALSE]),Xall[,,1]),tree=perm_tree,sim_tree=tree))
+  } else 
+  if(nreps==1 & nmissing==0) 
   {
     if(return.type=="matrix")
     {
@@ -2519,6 +2528,6 @@ sim.traits <- function(ntaxa=15,ntraits=4,nreps=1,nmissing=0,tree,v,anc,intraspe
     X[[j]] <- data.frame(species=species,X[[j]])
     if(nreps==1) rownames(X[[j]]) <- species
   }
-  #if(nsim==1) list(trait_data=X[[1]],tree=perm_tree,sim_tree=tree,original_X=original_X[[1]]) else
+  if(nsim==1) list(trait_data=X[[1]],tree=perm_tree,sim_tree=tree,original_X=original_X[[1]]) else
     list(trait_data=X,tree=perm_tree,sim_tree=tree,original_X=original_X)
 }
