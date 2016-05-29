@@ -1,5 +1,5 @@
 fast.geomorph.compare.evol.rates <-
-function (phy, A, gp, method="ML",ShowPlot = TRUE, iter = 999,censored=FALSE,force.diag=FALSE) 
+function (phy, A, gp, method="ML",ShowPlot = TRUE, iter = 1000,censored=FALSE,force.diag=FALSE) 
 {
   if(method=="REML") REML <- 1 else REML <- 0
   phy <- reorder(multi2di(phy),"postorder")
@@ -124,7 +124,7 @@ function (phy, A, gp, method="ML",ShowPlot = TRUE, iter = 999,censored=FALSE,for
     rate.mat <- crossprod(pY_results$contrasts)/(N-REML)
     if(force.diag & p>1) rate.mat <- diag(rep(mean(diag(rate.mat)),p))
     x.sim <- sim.char(phy, rate.mat, nsim = iter)
-    sig.sim <- 1
+    sig.sim <- 0
     if (nlevels(gp) > 2) {
       gp.sig.sim <- array(1, dim = c(dim(sigmad.obs$sigma.gp)[1], 
                                      dim(sigmad.obs$sigma.gp)[1]))
@@ -140,13 +140,13 @@ function (phy, A, gp, method="ML",ShowPlot = TRUE, iter = 999,censored=FALSE,for
                              gp.sig.sim + 1, gp.sig.sim)
       }
     }
-    sig.sim <- sig.sim/(iter + 1)
+    sig.sim <- sig.sim/(iter)
     if (nlevels(gp) > 2) {
-      gp.sig.sim <- gp.sig.sim/(iter + 1)
+      gp.sig.sim <- gp.sig.sim/(iter)
       rownames(gp.sig.sim) <- colnames(gp.sig.sim) <- levels(gp)
       gp.sig.sim[lower.tri(gp.sig.sim)] <- NA
     }
-    rate.val[iter + 1] = sigmad.obs$ratio
+    rate.val[iter] = sigmad.obs$ratio
     if (ShowPlot == TRUE) {
       hist(rate.val, 30, freq = TRUE, col = "gray", xlab = "SigmaD ratio")
       arrows(sigmad.obs$ratio, 50, sigmad.obs$ratio, 5, 
@@ -165,7 +165,7 @@ function (phy, A, gp, method="ML",ShowPlot = TRUE, iter = 999,censored=FALSE,for
 }
 
 fast.geomorph.physignal <-
-function (phy, A, iter = 999, ShowPlot = TRUE, method = c("Kmult", 
+function (phy, A, iter = 1000, ShowPlot = TRUE, method = c("Kmult", 
                                                           "SSC")) 
 {
   method <- match.arg(method)
@@ -231,7 +231,7 @@ function (phy, A, iter = 999, ShowPlot = TRUE, method = c("Kmult",
       return(K.stat)
     }
     K.obs <- Kmult(x)
-    P.val <- 1
+    P.val <- 0
     K.val <- rep(0, iter)
     for (i in 1:iter) {
       x.r <- as.matrix(x[sample(nrow(x)), ])
@@ -240,8 +240,8 @@ function (phy, A, iter = 999, ShowPlot = TRUE, method = c("Kmult",
       P.val <- ifelse(K.rand >= K.obs, P.val + 1, P.val)
       K.val[i] <- K.rand
     }
-    P.val <- P.val/(iter + 1)
-    K.val[iter + 1] = K.obs
+    P.val <- P.val/(iter)
+    K.val[iter] = K.obs
     if (ShowPlot == TRUE && dim(x)[2] > 1) {
       plotGMPhyloMorphoSpace(phy, A, ancStates = FALSE)
     }
@@ -250,11 +250,12 @@ function (phy, A, iter = 999, ShowPlot = TRUE, method = c("Kmult",
   if (method == "SSC") {
     anc.states <- NULL
     options(warn = -1)
-    anc.states <- fasterAnc(phy,x)
+    anc.states <- apply(x,2,ultraFastAnc,phy=phy)
+    #anc.states <- fasterAnc(phy,x)
     colnames(anc.states) <- NULL
     dist.mat <- as.matrix(dist(rbind(as.matrix(x), as.matrix(anc.states)))^2)
     SSC.o <- sum(dist.mat[phy$edge])
-    P.val <- 1
+    P.val <- 0
     SSC.val <- rep(0, iter)
     for (ii in 1:iter) {
       x.r <- x[sample(nrow(x)), ]
@@ -264,7 +265,8 @@ function (phy, A, iter = 999, ShowPlot = TRUE, method = c("Kmult",
       row.names(x.r) <- row.names(x)
       anc.states.r <- NULL
       options(warn = -1)
-      anc.states.r <- fasterAnc(phy,x.r)
+      anc.states.r <- apply(x.r,2,ultraFastAnc,phy=phy)
+      #anc.states.r <- fasterAnc(phy,x.r)
       colnames(anc.states.r) <- NULL
       dist.mat.r <- as.matrix(dist(rbind(as.matrix(x.r), 
                                          as.matrix(anc.states.r)))^2)
@@ -272,8 +274,8 @@ function (phy, A, iter = 999, ShowPlot = TRUE, method = c("Kmult",
       P.val <- ifelse(SSC.r <= SSC.o, P.val + 1, P.val)
       SSC.val[ii] <- SSC.r
     }
-    P.val <- P.val/(iter + 1)
-    SSC.val[iter + 1] = SSC.o
+    P.val <- P.val/(iter)
+    SSC.val[iter] = SSC.o
     if (ShowPlot == TRUE && dim(x)[2] > 1) {
       plotGMPhyloMorphoSpace(phy, A, ancStates = FALSE)
     }
@@ -282,7 +284,7 @@ function (phy, A, iter = 999, ShowPlot = TRUE, method = c("Kmult",
 }
 
 fast.geomorph.compare.multi.evol.rates <-
-function (A, gp, phy, Subset = TRUE, method="ML",ShowPlot = TRUE, iter = 999) 
+function (A, gp, phy, Subset = TRUE, method="ML",ShowPlot = TRUE, iter = 1000) 
 {
   if(method=="REML") REML <- 1 else REML <- 0
   phy <- reorder(multi2di(phy,random=FALSE),"postorder")
@@ -360,7 +362,7 @@ function (A, gp, phy, Subset = TRUE, method="ML",ShowPlot = TRUE, iter = 999)
   diag(rate.mat) <- rate.global
   rate.mat <- matrix(nearPD(rate.mat, corr = FALSE,keepDiag = TRUE)$mat, nrow = p, ncol = p)
   x.sim <- sim.char(phy, rate.mat, nsim = iter)
-  sig.rate <- 1
+  sig.rate <- 0
   rate.val <- rep(0, iter)
   for (ii in 1:iter) {
     rate.gps.r <- array(NA, ngps)
@@ -385,11 +387,11 @@ function (A, gp, phy, Subset = TRUE, method="ML",ShowPlot = TRUE, iter = 999)
     }
     rate.val[ii] <- rate.ratio.r
   }
-  sig.rate <- sig.rate/(iter + 1)
+  sig.rate <- sig.rate/(iter)
   if (ngps > 2) {
-    sig.rate.gps <- sig.rate.gps/(iter + 1)
+    sig.rate.gps <- sig.rate.gps/(iter)
   }
-  rate.val[iter + 1] = rate.ratio
+  rate.val[iter] = rate.ratio
   if (ShowPlot == TRUE) {
     hist(rate.val, 30, freq = TRUE, col = "gray", xlab = "SigmaD ratio")
     arrows(rate.ratio, 50, rate.ratio, 5, length = 0.1, lwd = 2)
@@ -452,7 +454,7 @@ fasterAnc <- function(tree, x, vars = FALSE, CI = FALSE)
   else return(result)
 }
 
-fast.geomorph.phylo.integration <- function (A1, A2, phy, iter = 999, label = NULL, 
+fast.geomorph.phylo.integration <- function (A1, A2, phy, iter = 1000, label = NULL, 
                             verbose = FALSE, ShowPlot = TRUE) 
 {
   phy <- reorder(multi2di(phy),"postorder")
@@ -530,7 +532,7 @@ fast.geomorph.phylo.integration <- function (A1, A2, phy, iter = 999, label = NU
   Yhat <- sum(XScores*YScores)/sum(XScores^2)*XScores
   pls.obs <- sqrt(sum(Yhat^2)/(sum((YScores-Yhat)^2)+sum(Yhat^2)))
   
-  P.val <- 1
+  P.val <- 0
   pls.val <- rep(0, iter)
   for (ii in 1:iter) {
     y.r <- y[sample(nrow(y)), ,drop=FALSE]
@@ -553,8 +555,8 @@ fast.geomorph.phylo.integration <- function (A1, A2, phy, iter = 999, label = NU
     pls.val[ii] <- pls.r
     P.val <- ifelse(pls.r >= pls.obs, P.val + 1, P.val)
   }
-  pls.val[iter + 1] = pls.obs
-  P.val <- P.val/(iter + 1)
+  pls.val[iter] = pls.obs
+  P.val <- P.val/(iter)
   if (ShowPlot == TRUE) {
     if (length(dim(A1)) == 2 && length(dim(A2)) == 2) {
       plot(XScores, YScores, pch = 21, bg = "black", 
@@ -624,7 +626,7 @@ fast.geomorph.phylo.integration <- function (A1, A2, phy, iter = 999, label = NU
 }
 
 fast.geomorph.procD.pgls <- 
-function (f1, phy, iter = 999, int.first = FALSE,
+function (f1, phy, iter = 1000, int.first = FALSE,
           verbose = FALSE) 
 {
   data = NULL
@@ -692,7 +694,7 @@ function (f1, phy, iter = 999, int.first = FALSE,
   
   get.stats <- function(pX_list,pY,ind)
   {
-    P <- array(, c(k, 1, iter + 1))
+    P <- array(, c(k, 1, iter))
     
     for(ii in 1:length(ind))
     {
