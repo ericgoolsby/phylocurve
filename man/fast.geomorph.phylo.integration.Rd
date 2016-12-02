@@ -8,7 +8,7 @@ The functions \code{fast.geomorph.compare.evol.rates}, \code{fast.geomorph.compa
 , and \code{fast.geomorph.physignal} are covariance-baesd implementations of the geomorph functions \link[geomorph]{compare.evol.rates}, \link[geomorph]{compare.multi.evol.rates}, \link[geomorph]{phylo.integration}, \link[geomorph]{procD.pgls}, and \link[geomorph]{physignal} using a fast linear-time algorithm. Code is directly modified from the original geomorph code for direct comparison between distance-based and covariance-based methods.
 }
 \usage{
-fast.geomorph.phylo.integration(A1, A2, phy, iter = 999,
+fast.geomorph.phylo.integration(A1, A2, phy, iter = 1000,
 label = NULL, verbose = FALSE, ShowPlot = TRUE)
 }
 \arguments{

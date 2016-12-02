@@ -8,7 +8,7 @@ The functions \code{fast.geomorph.compare.evol.rates}, \code{fast.geomorph.compa
 , and \code{fast.geomorph.physignal} are covariance-baesd implementations of the geomorph functions \link[geomorph]{compare.evol.rates}, \link[geomorph]{compare.multi.evol.rates}, \link[geomorph]{phylo.pls}, \link[geomorph]{procD.pgls}, and \link[geomorph]{physignal} using a fast linear-time algorithm. Code is directly modified from the original geomorph code for direct comparison between distance-based and covariance-based methods.
 }
 \usage{
-fast.geomorph.procD.pgls(f1, phy, iter = 999,
+fast.geomorph.procD.pgls(f1, phy, iter = 1000,
 int.first = FALSE, verbose = FALSE)
 }
 \arguments{
@@ -56,6 +56,6 @@ require(geomorph)
 ### Example of D-PGLS for high-dimensional data
 data(plethspecies)
 Y.gpa<-gpagen(plethspecies$land)    #GPA-alignment
-procD.pgls(Y.gpa$coords ~ Y.gpa$Csize,plethspecies$phy,iter=999)
+procD.pgls(Y.gpa$coords ~ Y.gpa$Csize,plethspecies$phy,iter=1000)
 fast.geomorph.procD.pgls(Y.gpa$coords ~ Y.gpa$Csize,plethspecies$phy)
 }

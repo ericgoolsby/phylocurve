@@ -694,7 +694,7 @@ function (f1, phy, iter = 1000, int.first = FALSE,
   
   get.stats <- function(pX_list,pY,ind)
   {
-    P <- array(, c(k, 1, iter))
+    P <- array(, c(k, 1, iter+1))
     
     for(ii in 1:length(ind))
     {
@@ -723,7 +723,7 @@ function (f1, phy, iter = 1000, int.first = FALSE,
     P
   }
   ind <- c(list(1:nrow(Y)), (Map(function(x) sample(1:nrow(Y)), 1:iter)))
-  P <- get.stats(pX_list,pY,ind)
+  P <- get.stats(pX_list,pY,ind)[,,-1,drop=FALSE]
   P.val <- Pval.matrix2(P)
   Z <- Effect.size.matrix2(P)
   anova.tab <- data.frame(anova.tab, Z = c(Z, NA, NA), P.value = c(P.val, NA, NA))
