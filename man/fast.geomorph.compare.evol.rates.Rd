@@ -9,7 +9,7 @@ The functions \code{fast.geomorph.compare.evol.rates}, \code{fast.geomorph.compa
 }
 \usage{
 fast.geomorph.compare.evol.rates(phy, A, gp,
-method = "ML", ShowPlot = TRUE, iter = 999,
+method = "ML", ShowPlot = TRUE, iter = 1000,
 censored = FALSE, force.diag = FALSE)
 }
 \arguments{
