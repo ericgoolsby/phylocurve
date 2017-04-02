@@ -11,7 +11,8 @@ evo.model(tree, Y, fixed.effects = NA, species.groups, trait.groups,
 model = "BM", diag.phylocov = FALSE, method = "Pairwise REML",
 force.zero.phylocov = character(), species.id = "species",
 max.combn = 10000, painted.edges, ret.level = 2, plot.LL.surface = FALSE,
-par.init.iters = 50, fixed.par = numeric(), multirate = FALSE, subset = TRUE)
+par.init.iters = 50, fixed.par = numeric(), multirate = FALSE, subset = TRUE,
+bounds)
 }
 \arguments{
   \item{tree}{
@@ -67,6 +68,9 @@ Default = FALSE. Whether or not to use a single value for evolutionary rates ins
 }
   \item{subset}{
 Default = TRUE. Whether or not traits are subsets of a single landmark configuration (implemented for compatability with the \code{\link[geomorph]{compare.multi.evol.rates}} function.
+}
+  \item{bounds}{
+Optional argument to set bounds for evolutionary model search space (does not apply to BM models).
 }
 }
 \details{
