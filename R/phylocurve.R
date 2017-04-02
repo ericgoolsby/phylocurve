@@ -409,7 +409,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
                       model="BM", diag.phylocov=FALSE, method = "Pairwise REML", 
                       force.zero.phylocov=character(), species.id = "species", max.combn = 10000, painted.edges,
                       ret.level = 2, plot.LL.surface = FALSE, par.init.iters = 50, fixed.par = numeric(),
-                      multirate = FALSE,subset=TRUE,bounds)
+                      multirate = FALSE,subset=TRUE)
   # ret.level: 1=logL only, 2=multi rates, 3=full rates
 {
   tree <- reorder(tree,"postorder")
@@ -874,15 +874,6 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
     rownames(bounds.default) <- c("alpha","alpha","lambda","kappa","delta","rate")
     colnames(bounds.default) <- c("min","max")
     starting.values.default <- c(0.5/Tmax,0.5/Tmax,0.5,0.5,0.5,-1/Tmax)
-    if(!missing(bounds))
-    {
-      bounds.default[,1] <- bounds[1]
-      bounds.default[,2] <- bounds[2]
-      if(any(starting.values.default < bounds[1]) | any(starting.values.default > bounds[1]))
-      {
-        starting.values.default[1:length(starting.values.default)] <- mean(bounds[1:2])
-      }
-    }
     names(starting.values.default) <- c("OUrandomRoot","OUfixedRoot","lambda","kappa","delta","EB")
     model_i <- match(model,names(starting.values.default))
     bounds.default <- bounds.default[model_i,,drop=FALSE]
@@ -1218,18 +1209,17 @@ pre_parallel <- function()
     return(FALSE)
   }
   tmp <- rownames(installed.packages())
-  #if (("doParallel" %in% tmp | "doSNOW" %in% tmp) & "foreach" %in% tmp)
-  if (("doParallel" %in% tmp) & "foreach" %in% tmp)
+  if (("doParallel" %in% tmp | "doSNOW" %in% tmp) & "foreach" %in% tmp)
   {
-    #if(Sys.info()["sysname"] == "Windows" & "doSNOW" %in% tmp)
-    #{
-    #  requireNamespace("doSNOW")
-    #  return(TRUE)
-    #} else if("doParallel" %in% tmp)
-    #{
+    if(Sys.info()["sysname"] == "Windows" & "doSNOW" %in% tmp)
+    {
+      requireNamespace("doSNOW")
+      return(TRUE)
+    } else if("doParallel" %in% tmp)
+    {
       requireNamespace("doParallel")
       return(TRUE)
-    #}
+    }
   } else return(FALSE)
 }
 
@@ -1635,11 +1625,9 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
         if(pre_parallel())
         {
           ncores <- detectCores()
-          cl <- #if(Sys.info()["sysname"] == "Windows") makeCluster(ncores) else 
-            makeCluster(ncores)
+          cl <- if(Sys.info()["sysname"] == "Windows") makeCluster(ncores) else makeCluster(ncores)
           cat("registering...")
-          #if(Sys.info()["sysname"] == "Windows") registerDoSNOW(cl) else 
-            registerDoParallel(cl)
+          if(Sys.info()["sysname"] == "Windows") registerDoSNOW(cl) else registerDoParallel(cl)
           cat("\nBootstrapping under null model.\n")
           null_sim_LR <- simplify2array(foreach(i=1:nsim) %dopar%
           {

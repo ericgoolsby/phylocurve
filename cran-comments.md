@@ -12,7 +12,5 @@
         morphometric (7:75)
         phylogenetic (7:165)
             * EXPLANATION: This spelling is correct
-
-## CRAN Package Check Results
-* This update fixes an error that was a side effect of ape package 4.0. The error is now resolved.
-* Additionally, there were several r-release-osx-x86_64-mavericks warnings, apparently due to import(geomorph). The new version of geomorph seems to have resolved these issues, but I will promptly address anything remaining.
+        * Uses the superseded package: 'doSNOW'
+            * EXPLANATION: imports doSNOW and doParallel for cross-platform compatability

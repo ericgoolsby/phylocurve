@@ -23,6 +23,7 @@ Imports:
     phylolm,
     phytools,
     rgl,
+    doSNOW,
     doParallel,
     foreach,
     parallel,
