@@ -11,8 +11,8 @@ Tools for studying the evolution of high-dimensional traits (in particular, func
 \tabular{ll}{
 Package: \tab phylocurve\cr
 Type: \tab Package\cr
-Version: \tab 2.0.7\cr
-Date: \tab 2016-12-01\cr
+Version: \tab 2.0.8\cr
+Date: \tab 2019-12-11\cr
 License: \tab GPL (>= 2)\cr
 }
 

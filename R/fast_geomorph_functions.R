@@ -30,7 +30,7 @@ function (phy, A, gp, method="ML",ShowPlot = TRUE, iter = 1000,censored=FALSE,fo
   if (is.null(names(gp))) {
     stop("Factor contains no names. Use names() to assign specimen names to group factor.")
   }
-  if (class(phy) != "phylo") 
+  if (!inherits(phy,"phylo")) 
     stop("tree must be of class 'phylo.'")
   ntaxa <- length(phy$tip.label)
   N <- nrow(x)
@@ -192,7 +192,7 @@ function (phy, A, iter = 1000, ShowPlot = TRUE, method = c("Kmult",
     }
     x <- as.matrix(A)
   }
-  if (class(phy) != "phylo") 
+  if (!inherits(phy,"phylo")) 
     stop("tree must be of class 'phylo.'")
   if (!is.binary.tree(phy)) 
     stop("tree is not fully bifurcating.")
@@ -314,7 +314,7 @@ function (A, gp, phy, Subset = TRUE, method="ML",ShowPlot = TRUE, iter = 1000)
   }
   ntaxa <- length(phy$tip.label)
   N <- nrow(x)
-  if (class(phy) != "phylo") 
+  if (!inherits(phy,"phylo")) 
     stop("tree must be of class 'phylo.'")
   if (is.null(rownames(x))) {
     stop("Data matrix does not include taxa names.")
@@ -470,7 +470,7 @@ fast.geomorph.phylo.integration <- function (A1, A2, phy, iter = 1000, label = N
   if (is.numeric(A2) == FALSE) {
     stop("A2 is not numeric. see ?numeric")
   }
-  if (class(phy) != "phylo") 
+  if (!inherits(phy,"phylo")) 
     stop("phy must be of class 'phylo.'")
   if (length(dim(A1)) == 3) {
     x <- two.d.array(A1)

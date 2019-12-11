@@ -386,11 +386,11 @@ print.evo.model <- function(x,...)
   print(simplify2array(x$sigma2.mult))
   ndims <- ncol(x$evo.model.args$Y)
   if(x$evo.model.args$multirate) cat("Evolutionary rates constrained to be equal.\n")
-  if(class(x$evo.model.args$species.groups)=="factor") cat("Species groups:",levels(x$evo.model.args$species.groups),"\n")
+  if(inherits(x$evo.model.args$species.groups,"factor")) cat("Species groups:",levels(x$evo.model.args$species.groups),"\n")
   if(x$evo.model.args$diag.phylocov) cat("Traits assumed to be independent (zero evolutionary covariance).")
   if(length(x$evo.model.args$force.zero.phylocov)>0) cat("Covariance of",length(x$evo.model.args$force.zero.phylocov),"traits with remaining traits constrained to zero.\n")
   if(length(x$evo.model.args$fixed.par)>0) cat(names(x$model.par)," constrained to equal ",x$evo.model.args$fixed.par,".\n",sep="")
-  if(class(x$evo.model.args$fixed.effects)=="matrix") cat("Model fit with ", ncol(x$evo.model.args$fixed.effects)," fixed effects.\n",sep="")
+  if(inherits(x$evo.model.args$fixed.effects,"matrix")) cat("Model fit with ", ncol(x$evo.model.args$fixed.effects)," fixed effects.\n",sep="")
   if(suppressWarnings(round(exp(lfactorial(ndims) - (log(2) + lfactorial(ndims-2)))))>x$evo.model.args$max.combn) cat("Pairwise log-likelihood approximated via Monte Carlo simulation.\n")
   cat("\nLog-likelihood: ",x$logL,"\n")
   cat("Method: ",x$evo.model.args$method,"\n")
@@ -452,7 +452,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
   
   intraspecific <- FALSE # this option is fixed for now; future updates will allow for within-species observations
   
-  if(class(fixed.effects)=="logical")
+  if(inherits(fixed.effects,"logical"))
   {
     X <- numeric(0)
     X1 <- matrix(1,nspecies)
@@ -460,7 +460,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
   } else
   {
     X <- fixed.effects
-    if(class(X)=="data.frame")
+    if(inherits(X,"data.frame"))
     {
       species_col <- match(species.id,colnames(X))
       if(is.na(species_col)) stop("Name of species.id much match a column in X (if supplying a data frame).")
@@ -476,7 +476,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
         rownames(new_X) <- as.character(X[,1])
         X <- new_X
       }
-    } else if(class(X)=="matrix")
+    } else if(inherits(X,"matrix"))
     {
       if(is.null(rownames(X)))
       {
@@ -484,13 +484,13 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
         warning("Row names of X do not match tip labels of tree. Assuming data are in order of tips.",immediate. = TRUE)
       }
       nms <- name.check(phy = tree,data.names = rownames(X))
-      if(class(nms)=="list")
+      if(inherits(nms,"list"))
       {
         rownames(X) <- tree$tip.label
         warning("Row names of X do not match tip labels of tree. Assuming data are in order of tips.",immediate. = TRUE)
       }
       if(is.null(colnames(X))) colnames(X) <- paste("X",1:ncol(X),sep="")
-    } else if(class(X)=="numeric")
+    } else if(inherits(X,"numeric"))
     {
       if(is.null(names(X))) 
       {
@@ -499,7 +499,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
       } else
       {
         nms <- name.check(phy = tree,data.names = names(X))
-        if(class(nms)=="list")
+        if(inherits(nms,"list"))
         {
           warning("Names of X do not match tip labels of tree. Assuming data are in order of tips.",immediate. = TRUE)
           names(X) <- tree$tip.label
@@ -530,7 +530,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
   
   # make sure data (Y) is properly formatted
   # if intraspecific==FALSE, matrices will be used
-  if(class(Y)=="data.frame")
+  if(inherits(Y,"data.frame"))
   {
     species_col <- match(species.id,colnames(Y))
     if(is.na(species_col)) stop("Name of species.id much match a column in Y (if supplying a data frame).")
@@ -546,7 +546,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
       rownames(new_Y) <- as.character(Y[,1])
       Y <- new_Y
     }
-  } else if(class(Y)=="matrix")
+  } else if(inherits(Y,"matrix"))
   {
     if(is.null(rownames(Y)))
     {
@@ -554,13 +554,13 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
       warning("Row names of Y do not match tip labels of tree. Assuming data are in order of tips.",immediate. = TRUE)
     }
     nms <- name.check(phy = tree,data.names = rownames(Y))
-    if(class(nms)=="list")
+    if(inherits(nms,"list"))
     {
       rownames(Y) <- tree$tip.label
       warning("Row names of Y do not match tip labels of tree. Assuming data are in order of tips.",immediate. = TRUE)
     }
     if(is.null(colnames(Y))) colnames(Y) <- paste("V",1:ncol(Y),sep="")
-  } else if(class(Y)=="numeric")
+  } else if(inherits(Y,"numeric"))
   {
     if(is.null(names(Y))) 
     {
@@ -569,7 +569,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
     } else
     {
       nms <- name.check(phy = tree,data.names = names(Y))
-      if(class(nms)=="list")
+      if(inherits(nms,"list"))
       {
         warning("Names of Y do not match tip labels of tree. Assuming data are in order of tips.",immediate. = TRUE)
         names(Y) <- tree$tip.label
@@ -677,12 +677,12 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
           if(length(X)>0)
           {
             YY <- sum(tcrossprod(a-x%*%betas,backsolve(chol(C),diagndims,transpose=TRUE))^2)
-            if(class(YY)=="try-error") YY <- sum(diag(solve(C)%*%crossprod(a-x%*%betas)))
+            if(inherits(YY,"try-error")) YY <- sum(diag(solve(C)%*%crossprod(a-x%*%betas)))
             logdetXWX <- determinant(XX)$modulus[[1]]*ncol(C) - determinant(C)$modulus[[1]]*(ncol(X)+1)
           } else 
           {
             YY <- try(sum(tcrossprod(a,backsolve(chol(C),diagndims,transpose=TRUE))^2),silent=TRUE)
-            if(class(YY)=="try-error") YY <- sum(diag(solve(C)%*%crossprod(a)))
+            if(inherits(YY,"try-error")) YY <- sum(diag(solve(C)%*%crossprod(a)))
             logdetXWX <- (-log_Csub + ndims_invV)
           }
           logL <- -(const + (nspecies*log_Csub + ndims_logd) + REML*logdetXWX + YY)/2
@@ -702,12 +702,12 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
             if(length(X)>0)
             {
               try(YY <- sum(tcrossprod(a[,c(r,s)]-x%*%betas[,c(r,s)],backsolve(chol(Csub),diag2,transpose=TRUE))^2),silent=TRUE)
-              if(class(YY)=="try-error") YY <- sum(diag(solve(Csub)%*%crossprod(a[,c(r,s)]-x%*%betas[,c(r,s)])))
+              if(inherits(YY,"try-error")) YY <- sum(diag(solve(Csub)%*%crossprod(a[,c(r,s)]-x%*%betas[,c(r,s)])))
               logdetXWX <- determinant(XX)$modulus[[1]]*2 - log_Csub*(ncol(X)+1)
             } else 
             {
               try(YY <- sum(tcrossprod(a[,c(r,s)],backsolve(chol(Csub),diag2,transpose=TRUE))^2),silent=TRUE)
-              if(class(YY)=="try-error") YY <- sum(diag(solve(Csub)%*%crossprod(a[,c(r,s)])))
+              if(inherits(YY,"try-error")) YY <- sum(diag(solve(Csub)%*%crossprod(a[,c(r,s)])))
               logdetXWX <- (-log_Csub + ndims_invV)
             }
             logL <- logL - (const + (nspecies*log_Csub + ndims_logd) + REML*logdetXWX + YY)
@@ -924,7 +924,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
       temp_tree <- reorder(temp_tree,"postorder")
       if(!binary) temp_ditree <- multi2di(temp_tree,random=FALSE) else temp_ditree <- temp_tree
       ret <- try(simple_BM(temp_tree = temp_tree,ditree = temp_ditree,ret_pars = ret_pars),silent=TRUE)
-      if(class(ret)=="try-error") return(-.Machine$double.xmax) else return(ret)
+      if(inherits(ret,"try-error")) return(-.Machine$double.xmax) else return(ret)
     }
     
     if(MC) try_length <- max(50,par.init.iters) else try_length <- par.init.iters
@@ -1270,7 +1270,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
   tree <- model1$transf_tree
   nspecies <- length(tree$tip.label)
   nedge <- nrow(tree$edge)
-  if(class(model$evo.model.args$species.groups)=="factor") gps <- TRUE else gps <- FALSE
+  if(inherits(model$evo.model.args$species.groups,"factor")) gps <- TRUE else gps <- FALSE
   if(length(tree$edge.length)==nrow(tree$edge))
     if(!is.null(tree$root.edge)) tree$edge.length <- c(tree$edge.length[1:nedge],tree$root.edge) else tree$edge.length <- c(tree$edge.length[1:nedge],0)
   model$evo.model.args$ret.level <- 3
@@ -1285,7 +1285,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
   anc_nodes <- tree$edge[,1]-1
   if(model$evo.model.args$model=="BM") model$evo.model.args$max.combn <- 1
   pY <- prep_multipic2(model$evo.model.args$Y,phy = model$evo.model.args$tree,edge_len_mat = t(new_edge))
-  if(class(model$evo.model.args$fixed.effects)=="matrix")
+  if(inherits(model$evo.model.args$fixed.effects,"matrix"))
   {
     pX <- prep_multipic(model$evo.model.args$fixed.effects,phy = model$evo.model.args$tree)
   }
@@ -1293,7 +1293,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
   calc_denom <- function(Y,fixed_effects)
   {
     model$evo.model.args$Y <- Y
-    if(class(model$evo.model.args$fixed.effects)=="matrix") model$evo.model.args$fixed.effects <- fixed_effects
+    if(inherits(model$evo.model.args$fixed.effects,"matrix")) model$evo.model.args$fixed.effects <- fixed_effects
     model <- do.call(evo.model,model$evo.model.args)
     
     if(gps)
@@ -1310,7 +1310,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     pY$phe[1:nspecies,] <- Y
     pY_results <- do.call(multipic2,pY)
     
-    if(class(model$evo.model.args$fixed.effects)=="matrix")
+    if(inherits(model$evo.model.args$fixed.effects,"matrix"))
     {
       pX$phe[1:nspecies,] <- model$evo.model.args$fixed.effects
       pX_results <- apply(new_edge,1,function(X) 
@@ -1329,7 +1329,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     num <- sum(diag(crossprod((Y-model$predicted)/scale_res,Y-model$predicted)))
     sum_new_heights <- rowSums(new_heights)
     invsums <- pY_results$sum_invV[1,]
-    if(class(model$evo.model.args$fixed.effects)!="matrix")
+    if(!inherits(model$evo.model.args$fixed.effects,"matrix"))
     {
       ratio <- num / sum(diag(crossprod(pY_results$contrasts)))
     } else
@@ -1346,7 +1346,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
   
   for(i in 1:nsim)
   {
-    denom_ratio[i] <- if(class(model$evo.model.args$fixed.effects)!="matrix")
+    denom_ratio[i] <- if(!inherits(model$evo.model.args$fixed.effects,"matrix"))
       calc_denom(Y = sim_alt$trait_data[[i]]) else
         calc_denom(Y = sim_alt$trait_data[[i]],fixed_effects = sim_alt$fixed_effectes[[i]])
   }
@@ -1356,7 +1356,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
   get_K <- function(Y,fixed_effects)
   {
     model$evo.model.args$Y <- Y
-    if(class(model$evo.model.args$fixed.effects)=="matrix") model$evo.model.args$fixed.effects <- fixed_effects
+    if(inherits(model$evo.model.args$fixed.effects,"matrix")) model$evo.model.args$fixed.effects <- fixed_effects
     model <- do.call(evo.model,model$evo.model.args)
     
     if(gps)
@@ -1373,7 +1373,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     pY$phe[1:nspecies,] <- Y
     pY_results <- do.call(multipic2,pY)
     
-    if(class(model$evo.model.args$fixed.effects)=="matrix")
+    if(inherits(model$evo.model.args$fixed.effects,"matrix"))
     {
       pX$phe[1:nspecies,] <- model$evo.model.args$fixed.effects
       pX_results <- apply(new_edge,1,function(X) 
@@ -1392,7 +1392,7 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     num <- sum(diag(crossprod((Y-model$predicted)/scale_res,Y-model$predicted)))
     sum_new_heights <- rowSums(new_heights)
     invsums <- pY_results$sum_invV[1,]
-    if(class(model$evo.model.args$fixed.effects)!="matrix")
+    if(!inherits(model$evo.model.args$fixed.effects,"matrix"))
     {
       K <- (num / sum(diag(crossprod(pY_results$contrasts)))) / e_ratio
     } else
@@ -1411,11 +1411,11 @@ K.mult <- function(model,nsim=1000,plot=TRUE)
     suppressWarnings
     {
     cat("\nBootstrapping under null model.\n")
-      for(i in 1:nsim) nullK[i] <- if(class(model$evo.model.args$fixed.effects)=="matrix") get_K(sim_null$trait_data[[i]],sim_null$fixed_effects[[i]]) else get_K(sim_null$trait_data[[i]])
+      for(i in 1:nsim) nullK[i] <- if(inherits(model$evo.model.args$fixed.effects,"matrix")) get_K(sim_null$trait_data[[i]],sim_null$fixed_effects[[i]]) else get_K(sim_null$trait_data[[i]])
       altK <- denom_ratio / e_ratio
     }
   
-  K <- if(class(model$evo.model.args$fixed.effects)=="matrix") get_K(model$evo.model.args$Y,model$evo.model.args$fixed.effects) else
+  K <- if(inherits(model$evo.model.args$fixed.effects,"matrix")) get_K(model$evo.model.args$Y,model$evo.model.args$fixed.effects) else
     get_K(model$evo.model.args$Y)
   critical_K <- sort(nullK)[min(round(nsim*.95)+1,nsim)]
   if(plot)
@@ -1467,7 +1467,7 @@ sim.model <- function(model,nsim=1000,return.type="matrix")
     args <- model1$evo.model.args
     args$ret.level <- 3
     if(args$model!="BM") args$fixed.par <- model1$model.par
-    if(class(perm_fixed_par_1$fixed.effects)=="matrix")
+    if(inherits(perm_fixed_par_1$fixed.effects,"matrix"))
     {
       args$Y <- cbind(args$Y,args$fixed.effects)
       args$fixed.effects <- NA
@@ -1492,7 +1492,7 @@ sim.model <- function(model,nsim=1000,return.type="matrix")
                                         as.list(model1$evo.model.args$fixed.par),nsim=nsim,return.type=return.type)
   }
   
-  if(class(perm_fixed_par_1$fixed.effects)=="matrix")
+  if(inherits(perm_fixed_par_1$fixed.effects,"matrix"))
   {
     for(i in 1:nsim)
     {
@@ -1514,7 +1514,7 @@ sim.model <- function(model,nsim=1000,return.type="matrix")
   }
   
   if(nsim==1) sim1$trait_data <- sim1$trait_data[[1]]
-  if(class(perm_fixed_par_1$fixed.effects)=="matrix")
+  if(inherits(perm_fixed_par_1$fixed.effects,"matrix"))
   {
     return(list(trait_data=sim1$trait_data,fixed_effects=fixed_effect_1))
   } else
@@ -1539,7 +1539,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
     args <- model1$evo.model.args
     args$ret.level <- 3
     if(args$model!="BM") args$fixed.par <- model1$model.par
-    if(class(perm_fixed_par_1$fixed.effects)=="matrix")
+    if(inherits(perm_fixed_par_1$fixed.effects,"matrix"))
     {
       args$Y <- cbind(args$Y,args$fixed.effects)
       args$fixed.effects <- NA
@@ -1553,7 +1553,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
     args <- model2$evo.model.args
     args$ret.level <- 3
     if(args$model!="BM") args$fixed.par <- model2$model.par
-    if(class(perm_fixed_par_2$fixed.effects)=="matrix")
+    if(inherits(perm_fixed_par_2$fixed.effects,"matrix"))
     {
       args$Y <- cbind(args$Y,args$fixed.effects)
       args$fixed.effects <- NA
@@ -1582,7 +1582,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
   
   if(nsim==1) sim1$trait_data <- list(sim1$trait_data)
   
-  if(class(perm_fixed_par_1$fixed.effects)=="matrix")
+  if(inherits(perm_fixed_par_1$fixed.effects,"matrix"))
   {
     for(i in 1:nsim)
     {
@@ -1608,7 +1608,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       
     }
     if(nsim==1) sim2$trait_data <- list(sim2$trait_data)
-    if(class(perm_fixed_par_2$fixed.effects)=="matrix")
+    if(inherits(perm_fixed_par_2$fixed.effects,"matrix"))
     {
       for(i in 1:nsim)
       {
@@ -1646,7 +1646,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
             args1$Y <- sim1$trait_data[[i]]
             args2$Y <- sim1$trait_data[[i]]
             args1$fixed.effects <- fixed_effect_1[[i]]
-            args2$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_1[[i]] else perm_fixed_par_2$fixed.effects
+            args2$fixed.effects <- if(inherits(fixed_effect_1[[i]],"matrix") & inherits(fixed_effect_2[[i]],"matrix")) fixed_effect_1[[i]] else perm_fixed_par_2$fixed.effects
             -2*(do.call(phylocurve::evo.model,args1) - do.call(phylocurve::evo.model,args2))
           })
           if(estimate_power)
@@ -1658,7 +1658,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
               {
                 args1$Y <- sim2$trait_data[[i]]
                 args2$Y <- sim2$trait_data[[i]]
-                args1$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
+                args1$fixed.effects <- if(inherits(fixed_effect_1[[i]],"matrix") & inherits(fixed_effect_2[[i]],"matrix")) fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
                 args2$fixed.effects <- fixed_effect_2[[i]]
                 args2$ret.level <- 2
                 null_LL <- do.call(phylocurve::evo.model,args1)
@@ -1673,7 +1673,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
               {
                 args1$Y <- sim2$trait_data[[i]]
                 args2$Y <- sim2$trait_data[[i]]
-                args1$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
+                args1$fixed.effects <- if(inherits(fixed_effect_1[[i]],"matrix") & inherits(fixed_effect_2[[i]],"matrix")) fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
                 args2$fixed.effects <- fixed_effect_2[[i]]
                 -2*(do.call(phylocurve::evo.model,args1) - do.call(phylocurve::evo.model,args2))
               })
@@ -1683,7 +1683,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       },silent=TRUE)
     try(if(Sys.info()["sysname"] == "Windows") stopCluster(cl) else stopCluster(cl),silent=TRUE)
   }
-  if(!parallel | class(par_try)=="try-error")
+  if(!parallel | inherits(par_try,"try-error"))
   {
     cat("\nBootstrapping under null model.\n")
     null_sim_LR <- double(nsim)
@@ -1692,7 +1692,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
       args1$Y <- sim1$trait_data[[i]]
       args2$Y <- sim1$trait_data[[i]]
       args1$fixed.effects <- fixed_effect_1[[i]]
-      args2$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_1[[i]] else perm_fixed_par_2$fixed.effects
+      args2$fixed.effects <- if(inherits(fixed_effect_1[[i]],"matrix") & inherits(fixed_effect_2[[i]],"matrix")) fixed_effect_1[[i]] else perm_fixed_par_2$fixed.effects
       null_sim_LR[i] <- -2*(do.call(evo.model,args1) - do.call(evo.model,args2))
     }
     if(estimate_power)
@@ -1708,7 +1708,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
               args1$Y <- sim2$trait_data[[i]]
               args2$Y <- sim2$trait_data[[i]]
               args2$ret.level <- 2
-              args1$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
+              args1$fixed.effects <- if(inherits(fixed_effect_1[[i]],"matrix") & inherits(fixed_effect_2[[i]],"matrix")) fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
               args2$fixed.effects <- fixed_effect_2[[i]]
               null_LL <- do.call(evo.model,args1)
               alt_LL <- do.call(evo.model,args2)
@@ -1726,7 +1726,7 @@ compare.models <- function(model1,model2,nsim=1000,plot=TRUE,estimate_power=TRUE
             {
               args1$Y <- sim2$trait_data[[i]]
               args2$Y <- sim2$trait_data[[i]]
-              args1$fixed.effects <- if(class(fixed_effect_1[[i]])=="matrix" & class(fixed_effect_2[[i]])=="matrix") fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
+              args1$fixed.effects <- if(inherits(fixed_effect_1[[i]],"matrix") & inherits(fixed_effect_2[[i]],"matrix")) fixed_effect_2[[i]] else perm_fixed_par_1$fixed.effects
               args2$fixed.effects <- fixed_effect_2[[i]]
               alt_sim_LR[i] <- -2*(do.call(evo.model,args1) - do.call(evo.model,args2))
             }
@@ -2030,7 +2030,7 @@ nonlinear.fit <- function(data, x_variable, y_variable, fct = LL2.3(),
     x <- x[complete_cases_y]
     y <- y[complete_cases_y]
     temp_lm <- try(drm(y~x,fct = fct,...),silent=TRUE)
-    if(class(temp_lm)=="try-error")
+    if(inherits(temp_lm,"try-error"))
     {
       warning("Convergence failed for ",temp_species,". Using simple linear regression.",immediate. = TRUE)
       pred_y <- predict(lm(y~x),newdata = data.frame(x=new_x))
@@ -2082,7 +2082,7 @@ GP.fit <- function(data, x_variable, y_variable,
     x <- x[complete_cases_y]
     y <- y[complete_cases_y]
     temp_lm <- try(GP_fit(X = normalize_to_01(c(range(new_x),x))[-(1:2)],Y = y,...),silent=TRUE)
-    if(class(temp_lm)=="try-error")
+    if(inherits(temp_lm,"try-error"))
     {
       warning("Convergence failed for ",temp_species,". Using simple linear regression.",immediate. = TRUE)
       pred_y <- predict(lm(y~x),newdata = data.frame(x=new_x))

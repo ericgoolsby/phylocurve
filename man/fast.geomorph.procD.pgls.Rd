@@ -4,8 +4,8 @@
 Fast covariance-based implementations of distance-based methods
 }
 \description{
-The functions \code{fast.geomorph.compare.evol.rates}, \code{fast.geomorph.compare.multi.evol.rates}, \code{fast.geomorph.phylo.pls}, \code{fast.geomorph.procD.pgls}
-, and \code{fast.geomorph.physignal} are covariance-baesd implementations of the geomorph functions \link[geomorph]{compare.evol.rates}, \link[geomorph]{compare.multi.evol.rates}, \link[geomorph]{phylo.pls}, \link[geomorph]{procD.pgls}, and \link[geomorph]{physignal} using a fast linear-time algorithm. Code is directly modified from the original geomorph code for direct comparison between distance-based and covariance-based methods.
+The functions \code{fast.geomorph.compare.evol.rates}, \code{fast.geomorph.compare.multi.evol.rates}, \code{fast.geomorph.phylo.integration}, \code{fast.geomorph.procD.pgls}
+, and \code{fast.geomorph.physignal} are covariance-baesd implementations of the geomorph functions \link[geomorph]{compare.evol.rates}, \link[geomorph]{compare.multi.evol.rates}, \link[geomorph]{phylo.integration}, \link[geomorph]{procD.pgls}, and \link[geomorph]{physignal} using a fast linear-time algorithm. Code is directly modified from the original geomorph code for direct comparison between distance-based and covariance-based methods.
 }
 \usage{
 fast.geomorph.procD.pgls(f1, phy, iter = 1000,
@@ -48,7 +48,7 @@ Eric W. Goolsby
 \examples{
 ### NOTE: this example is identical 
 ### to the example code for the
-### analogous geomorph function
+### analogous geomorph function (previous versions)
 ### for direct comparisons with
 ### 'fast.geomorph' phylocurve functions
 require(geomorph)
@@ -56,6 +56,10 @@ require(geomorph)
 ### Example of D-PGLS for high-dimensional data
 data(plethspecies)
 Y.gpa<-gpagen(plethspecies$land)    #GPA-alignment
-procD.pgls(Y.gpa$coords ~ Y.gpa$Csize,plethspecies$phy,iter=1000)
+gdf <- geomorph.data.frame(Y.gpa, phy = plethspecies$phy)
+pleth.pgls <- procD.pgls(coords ~ Csize, phy = phy, data = gdf, iter = 999)
 fast.geomorph.procD.pgls(Y.gpa$coords ~ Y.gpa$Csize,plethspecies$phy)
+
+
+
 }

@@ -47,7 +47,3 @@ tree <- rtree(1e4) # random tree with 10,000 taxa
 x <- setNames(rnorm(1e4),tree$tip.label) # random trait data
 recon <- ultraFastAnc(phy=tree,x=x,CI=TRUE)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
