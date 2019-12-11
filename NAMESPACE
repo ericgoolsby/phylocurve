@@ -1,4 +1,4 @@
-useDynLib(phylocurve)
+useDynLib(phylocurve, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
 import(ape)
 import(drc)

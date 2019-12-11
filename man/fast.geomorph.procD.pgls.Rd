@@ -48,7 +48,7 @@ Eric W. Goolsby
 \examples{
 ### NOTE: this example is identical 
 ### to the example code for the
-### analogous geomorph function (previous versions)
+### analogous geomorph function
 ### for direct comparisons with
 ### 'fast.geomorph' phylocurve functions
 require(geomorph)
@@ -57,9 +57,6 @@ require(geomorph)
 data(plethspecies)
 Y.gpa<-gpagen(plethspecies$land)    #GPA-alignment
 gdf <- geomorph.data.frame(Y.gpa, phy = plethspecies$phy)
-pleth.pgls <- procD.pgls(coords ~ Csize, phy = phy, data = gdf, iter = 999)
+procD.pgls(coords ~ Csize,data = gdf,plethspecies$phy,iter=1000)
 fast.geomorph.procD.pgls(Y.gpa$coords ~ Y.gpa$Csize,plethspecies$phy)
-
-
-
 }
