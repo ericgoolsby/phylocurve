@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // C_ultrafast
 arma::mat C_ultrafast(int nedge, arma::mat L, arma::mat E, arma::vec pic_ace, arma::vec ace_hat, arma::vec var_hat, arma::vec len_vec, arma::vec pic_len_vec);
-RcppExport SEXP phylocurve_C_ultrafast(SEXP nedgeSEXP, SEXP LSEXP, SEXP ESEXP, SEXP pic_aceSEXP, SEXP ace_hatSEXP, SEXP var_hatSEXP, SEXP len_vecSEXP, SEXP pic_len_vecSEXP) {
+RcppExport SEXP _phylocurve_C_ultrafast(SEXP nedgeSEXP, SEXP LSEXP, SEXP ESEXP, SEXP pic_aceSEXP, SEXP ace_hatSEXP, SEXP var_hatSEXP, SEXP len_vecSEXP, SEXP pic_len_vecSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -26,7 +26,7 @@ END_RCPP
 }
 // multipic
 List multipic(int ntip, int nnode, arma::vec edge1, arma::vec edge2, arma::vec edge_len, arma::mat phe, arma::mat contr, arma::vec var_contr, int scaled, int pic_len, int pic_recon);
-RcppExport SEXP phylocurve_multipic(SEXP ntipSEXP, SEXP nnodeSEXP, SEXP edge1SEXP, SEXP edge2SEXP, SEXP edge_lenSEXP, SEXP pheSEXP, SEXP contrSEXP, SEXP var_contrSEXP, SEXP scaledSEXP, SEXP pic_lenSEXP, SEXP pic_reconSEXP) {
+RcppExport SEXP _phylocurve_multipic(SEXP ntipSEXP, SEXP nnodeSEXP, SEXP edge1SEXP, SEXP edge2SEXP, SEXP edge_lenSEXP, SEXP pheSEXP, SEXP contrSEXP, SEXP var_contrSEXP, SEXP scaledSEXP, SEXP pic_lenSEXP, SEXP pic_reconSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -47,7 +47,7 @@ END_RCPP
 }
 // multipic2
 List multipic2(int ntip, int nnode, arma::vec edge1, arma::vec edge2, arma::mat edge_len, arma::mat phe, arma::mat contr, arma::mat var_contr, int scaled, int pic_len, int pic_recon);
-RcppExport SEXP phylocurve_multipic2(SEXP ntipSEXP, SEXP nnodeSEXP, SEXP edge1SEXP, SEXP edge2SEXP, SEXP edge_lenSEXP, SEXP pheSEXP, SEXP contrSEXP, SEXP var_contrSEXP, SEXP scaledSEXP, SEXP pic_lenSEXP, SEXP pic_reconSEXP) {
+RcppExport SEXP _phylocurve_multipic2(SEXP ntipSEXP, SEXP nnodeSEXP, SEXP edge1SEXP, SEXP edge2SEXP, SEXP edge_lenSEXP, SEXP pheSEXP, SEXP contrSEXP, SEXP var_contrSEXP, SEXP scaledSEXP, SEXP pic_lenSEXP, SEXP pic_reconSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -68,7 +68,7 @@ END_RCPP
 }
 // logdet
 double logdet(arma::mat A);
-RcppExport SEXP phylocurve_logdet(SEXP ASEXP) {
+RcppExport SEXP _phylocurve_logdet(SEXP ASEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -79,7 +79,7 @@ END_RCPP
 }
 // Rinv4
 double Rinv4(unsigned int nspecies, int nedge, int ngroups, arma::uvec ind, arma::vec len_vec, arma::uvec anc, arma::uvec des, arma::vec R, arma::mat painted_edges, arma::mat phylocovs, int REML);
-RcppExport SEXP phylocurve_Rinv4(SEXP nspeciesSEXP, SEXP nedgeSEXP, SEXP ngroupsSEXP, SEXP indSEXP, SEXP len_vecSEXP, SEXP ancSEXP, SEXP desSEXP, SEXP RSEXP, SEXP painted_edgesSEXP, SEXP phylocovsSEXP, SEXP REMLSEXP) {
+RcppExport SEXP _phylocurve_Rinv4(SEXP nspeciesSEXP, SEXP nedgeSEXP, SEXP ngroupsSEXP, SEXP indSEXP, SEXP len_vecSEXP, SEXP ancSEXP, SEXP desSEXP, SEXP RSEXP, SEXP painted_edgesSEXP, SEXP phylocovsSEXP, SEXP REMLSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -100,7 +100,7 @@ END_RCPP
 }
 // Rinv6
 double Rinv6(unsigned int nspecies, int nedge, int ngroups, arma::uvec ind, arma::vec len_vec, arma::uvec anc, arma::uvec des, arma::mat L, arma::vec R, arma::mat painted_edges, arma::mat phylocovs, int REML);
-RcppExport SEXP phylocurve_Rinv6(SEXP nspeciesSEXP, SEXP nedgeSEXP, SEXP ngroupsSEXP, SEXP indSEXP, SEXP len_vecSEXP, SEXP ancSEXP, SEXP desSEXP, SEXP LSEXP, SEXP RSEXP, SEXP painted_edgesSEXP, SEXP phylocovsSEXP, SEXP REMLSEXP) {
+RcppExport SEXP _phylocurve_Rinv6(SEXP nspeciesSEXP, SEXP nedgeSEXP, SEXP ngroupsSEXP, SEXP indSEXP, SEXP len_vecSEXP, SEXP ancSEXP, SEXP desSEXP, SEXP LSEXP, SEXP RSEXP, SEXP painted_edgesSEXP, SEXP phylocovsSEXP, SEXP REMLSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -122,7 +122,7 @@ END_RCPP
 }
 // theta_Rinv6
 arma::mat theta_Rinv6(unsigned int nspecies, int nedge, int ngroups, arma::uvec ind, arma::vec len_vec, arma::uvec anc, arma::uvec des, arma::mat L, arma::vec R, arma::mat painted_edges, arma::mat phylocovs, int REML);
-RcppExport SEXP phylocurve_theta_Rinv6(SEXP nspeciesSEXP, SEXP nedgeSEXP, SEXP ngroupsSEXP, SEXP indSEXP, SEXP len_vecSEXP, SEXP ancSEXP, SEXP desSEXP, SEXP LSEXP, SEXP RSEXP, SEXP painted_edgesSEXP, SEXP phylocovsSEXP, SEXP REMLSEXP) {
+RcppExport SEXP _phylocurve_theta_Rinv6(SEXP nspeciesSEXP, SEXP nedgeSEXP, SEXP ngroupsSEXP, SEXP indSEXP, SEXP len_vecSEXP, SEXP ancSEXP, SEXP desSEXP, SEXP LSEXP, SEXP RSEXP, SEXP painted_edgesSEXP, SEXP phylocovsSEXP, SEXP REMLSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -144,7 +144,7 @@ END_RCPP
 }
 // fast_transform
 arma::mat fast_transform(arma::mat m);
-RcppExport SEXP phylocurve_fast_transform(SEXP mSEXP) {
+RcppExport SEXP _phylocurve_fast_transform(SEXP mSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -152,4 +152,21 @@ BEGIN_RCPP
     rcpp_result_gen = Rcpp::wrap(fast_transform(m));
     return rcpp_result_gen;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_phylocurve_C_ultrafast", (DL_FUNC) &_phylocurve_C_ultrafast, 8},
+    {"_phylocurve_multipic", (DL_FUNC) &_phylocurve_multipic, 11},
+    {"_phylocurve_multipic2", (DL_FUNC) &_phylocurve_multipic2, 11},
+    {"_phylocurve_logdet", (DL_FUNC) &_phylocurve_logdet, 1},
+    {"_phylocurve_Rinv4", (DL_FUNC) &_phylocurve_Rinv4, 11},
+    {"_phylocurve_Rinv6", (DL_FUNC) &_phylocurve_Rinv6, 12},
+    {"_phylocurve_theta_Rinv6", (DL_FUNC) &_phylocurve_theta_Rinv6, 12},
+    {"_phylocurve_fast_transform", (DL_FUNC) &_phylocurve_fast_transform, 1},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_phylocurve(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

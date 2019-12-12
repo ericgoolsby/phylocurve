@@ -102,7 +102,7 @@ Eric W. Goolsby
 \code{\link[geomorph]{compare.multi.evol.rates}}
 \code{\link[geomorph]{physignal}}
 \code{\link[geomorph]{procD.pgls}}
-\code{\link[geomorph]{phylo.pls}}
+\code{\link[geomorph]{phylo.integration}}
 }
 \examples{
 rand.data <- sim.traits()
