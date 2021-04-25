@@ -1,7 +1,7 @@
 ultraFastAnc <- function(phy,x,vars=FALSE,CI=FALSE)
 {
   original_tree <- reorder(phy,"postorder")
-  if(!is.binary.tree(original_tree)) phy <- reorder(multi2di(phy),"postorder") else
+  if(!is.binary.phylo(original_tree)) phy <- reorder(multi2di(phy),"postorder") else
     phy <- original_tree
   prep <- prep_multipic(as.matrix(x),phy,rescaled.tree=TRUE,pic_recon=TRUE)
   pics <- do.call(multipic,prep)
@@ -27,7 +27,7 @@ ultraFastAnc <- function(phy,x,vars=FALSE,CI=FALSE)
   var_hat <- var_hat[ret_seq]
   names(ace_hat) <- names(var_hat) <- as.character(1:length(var_hat)+nspecies)
   var_hat <- mse*var_hat
-  if(!is.binary.tree(original_tree))
+  if(!is.binary.phylo(original_tree))
   {
     ancNames <- matchNodes(original_tree, phy)
     ace_hat <- ace_hat[as.character(ancNames[,2])]
@@ -47,7 +47,7 @@ ultraFastAnc <- function(phy,x,vars=FALSE,CI=FALSE)
 prep_ultraFastAnc <- function(phy,x,vars=FALSE,CI=FALSE)
 {
   original_tree <- reorder(phy,"postorder")
-  if(!is.binary.tree(original_tree)) phy <- reorder(multi2di(phy),"postorder") else
+  if(!is.binary.phylo(original_tree)) phy <- reorder(multi2di(phy),"postorder") else
     phy <- original_tree
   prep <- prep_multipic(as.matrix(x),phy,rescaled.tree=TRUE,pic_recon=TRUE)
   nn <- phy$Nnode
@@ -95,7 +95,7 @@ update_ultraFastAnc <- function(new_x,args)
   var_hat <- var_hat[ret_seq]
   names(ace_hat) <- names(var_hat) <- as.character(1:length(var_hat)+nspecies)
   var_hat <- mse*var_hat
-  if(!is.binary.tree(original_tree))
+  if(!is.binary.phylo(original_tree))
   {
     ancNames <- matchNodes(original_tree, phy)
     ace_hat <- ace_hat[as.character(ancNames[,2])]
@@ -853,7 +853,7 @@ evo.model <- function(tree, Y, fixed.effects = NA, species.groups, trait.groups,
     stop("Missing data and intraspecific observations are not yet supported.")
   }
   
-  if(!is.binary.tree(tree))
+  if(!is.binary.phylo(tree))
   {
     binary <- TRUE
     ditree <- multi2di(tree,random = FALSE)
@@ -1248,7 +1248,7 @@ multi.distFromRoot <- function (phy,edge.lengths)
 K.mult <- function(model,nsim=1000,plot=TRUE)
 {
   estimate_power <- TRUE
-  if(!is.binary.tree(model$evo.model.args$tree)) FLAG <- TRUE else FLAG <- FALSE
+  if(!is.binary.phylo(model$evo.model.args$tree)) FLAG <- TRUE else FLAG <- FALSE
   nvar <- ncol(model$evo.model.args$Y)
   null_model <- model
   null_model$evo.model.args$tree <- rescale(null_model$evo.model.args$tree,model = "lambda",lambda=0)

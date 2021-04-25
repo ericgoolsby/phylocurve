@@ -1,2 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+.Rproj.user
+.Rhistory
+.RData
+phylocurve.Rproj
+cran-comments.md

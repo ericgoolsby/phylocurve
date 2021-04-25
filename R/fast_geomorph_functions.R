@@ -1,6 +1,9 @@
 fast.geomorph.compare.evol.rates <-
 function (phy, A, gp, method="ML",ShowPlot = TRUE, iter = 1000,censored=FALSE,force.diag=FALSE) 
 {
+  .Deprecated(msg = "\n***All fast.geomorph functions are deprecated and will be removed from phylocurve soon.
+              If you are trying to perform distanced-based phylogenetic comparative methods on high-dimensional data, 
+              please use and cite the geomorph package.***")
   if(method=="REML") REML <- 1 else REML <- 0
   phy <- reorder(multi2di(phy),"postorder")
   if (length(dim(A)) == 3) {
@@ -168,6 +171,10 @@ fast.geomorph.physignal <-
 function (phy, A, iter = 1000, ShowPlot = TRUE, method = c("Kmult", 
                                                           "SSC")) 
 {
+  .Deprecated(msg = "\n***All fast.geomorph functions are deprecated and will be removed from phylocurve soon.
+              If you are trying to perform distanced-based phylogenetic comparative methods on high-dimensional data, 
+              please use and cite the geomorph package.***")
+  
   method <- match.arg(method)
   phy <- reorder(multi2di(phy,random=FALSE),"postorder")
   
@@ -194,7 +201,7 @@ function (phy, A, iter = 1000, ShowPlot = TRUE, method = c("Kmult",
   }
   if (!inherits(phy,"phylo")) 
     stop("tree must be of class 'phylo.'")
-  if (!is.binary.tree(phy)) 
+  if (!is.binary.phylo(phy)) 
     stop("tree is not fully bifurcating.")
   N <- length(phy$tip.label)
   if (N != dim(x)[1]) {
@@ -243,7 +250,7 @@ function (phy, A, iter = 1000, ShowPlot = TRUE, method = c("Kmult",
     P.val <- P.val/(iter)
     K.val[iter] = K.obs
     if (ShowPlot == TRUE && dim(x)[2] > 1) {
-      plotGMPhyloMorphoSpace(phy, A, ancStates = FALSE)
+      plot(gm.prcomp(A, phy, GLS = FALSE), phylo = TRUE)
     }
     return(list(phy.signal = K.obs, pvalue = P.val))
   }
@@ -277,7 +284,7 @@ function (phy, A, iter = 1000, ShowPlot = TRUE, method = c("Kmult",
     P.val <- P.val/(iter)
     SSC.val[iter] = SSC.o
     if (ShowPlot == TRUE && dim(x)[2] > 1) {
-      plotGMPhyloMorphoSpace(phy, A, ancStates = FALSE)
+      plot(gm.prcomp(A, phy, GLS = FALSE), phylo = TRUE)
     }
     return(list(phy.signal = SSC.o, pvalue = P.val))
   }
@@ -286,6 +293,10 @@ function (phy, A, iter = 1000, ShowPlot = TRUE, method = c("Kmult",
 fast.geomorph.compare.multi.evol.rates <-
 function (A, gp, phy, Subset = TRUE, method="ML",ShowPlot = TRUE, iter = 1000) 
 {
+  .Deprecated(msg = "\n***All fast.geomorph functions are deprecated and will be removed from phylocurve soon.
+              If you are trying to perform distanced-based phylogenetic comparative methods on high-dimensional data, 
+              please use and cite the geomorph package.***")
+  
   if(method=="REML") REML <- 1 else REML <- 0
   phy <- reorder(multi2di(phy,random=FALSE),"postorder")
   if (any(is.na(A)) == T) {
@@ -408,7 +419,7 @@ function (A, gp, phy, Subset = TRUE, method="ML",ShowPlot = TRUE, iter = 1000)
 
 fasterAnc <- function(tree, x, vars = FALSE, CI = FALSE) 
 {
-  if (!is.binary.tree(tree)) 
+  if (!is.binary.phylo(tree)) 
     btree <- multi2di(tree) else btree <- tree
   btree <-reorder(btree,"postorder")
   pY <- prep_multipic(x,phy = btree)
@@ -432,7 +443,7 @@ fasterAnc <- function(tree, x, vars = FALSE, CI = FALSE)
   }
   if(vars || CI) rownames(v) <- 1:M + N
   rownames(anc) <- 1:M + N
-  if (!is.binary.tree(tree)) {
+  if (!is.binary.phylo(tree)) {
     ancNames <- matchNodes(tree, btree)
     anc <- anc[as.character(ancNames[, 2]),]
     rownames(anc) <- ancNames[, 1]
@@ -457,6 +468,10 @@ fasterAnc <- function(tree, x, vars = FALSE, CI = FALSE)
 fast.geomorph.phylo.integration <- function (A1, A2, phy, iter = 1000, label = NULL, 
                             verbose = FALSE, ShowPlot = TRUE) 
 {
+  .Deprecated(msg = "\n***All fast.geomorph functions are deprecated and will be removed from phylocurve soon.
+              If you are trying to perform distanced-based phylogenetic comparative methods on high-dimensional data, 
+              please use and cite the geomorph package.***")
+  
   phy <- reorder(multi2di(phy),"postorder")
   if (any(is.na(A1)) == T) {
     stop("Data matrix 1 contains missing values. Estimate these first(see 'estimate.missing').")
@@ -629,6 +644,10 @@ fast.geomorph.procD.pgls <-
 function (f1, phy, iter = 1000, int.first = FALSE,
           verbose = FALSE) 
 {
+  .Deprecated(msg = "\n***All fast.geomorph functions are deprecated and will be removed from phylocurve soon.
+              If you are trying to perform distanced-based phylogenetic comparative methods on high-dimensional data, 
+              please use and cite the geomorph package.***")
+  
   data = NULL
   RRPP <- FALSE
   form.in <- formula(f1)

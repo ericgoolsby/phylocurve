@@ -1,9 +1,11 @@
 \name{fast.geomorph.physignal}
 \alias{fast.geomorph.physignal}
 \title{
-Fast covariance-based implementations of distance-based methods
+DEPRECATED: Fast covariance-based implementations of distance-based methods
 }
 \description{
+All fast.geomorph functions are deprecated and will be removed from phylocurve soon. If you are trying to perform distanced-based phylogenetic comparative methods on high-dimensional data, please use and cite the geomorph package.
+
 The functions \code{fast.geomorph.compare.evol.rates}, \code{fast.geomorph.compare.multi.evol.rates}, \code{fast.geomorph.phylo.integration}, \code{fast.geomorph.procD.pgls}
 , and \code{fast.geomorph.physignal} are covariance-baesd implementations of the geomorph functions \link[geomorph]{compare.evol.rates}, \link[geomorph]{compare.multi.evol.rates}, \link[geomorph]{phylo.integration}, \link[geomorph]{procD.pgls}, and \link[geomorph]{physignal} using a fast linear-time algorithm. Code is directly modified from the original geomorph code for direct comparison between distance-based and covariance-based methods.
 }
